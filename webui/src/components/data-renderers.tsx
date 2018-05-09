@@ -16,12 +16,13 @@ export class StringRenderer extends React.Component<StringRendererProps,any> {
 }
 
 interface TableRefRendererProps{
+    table:string
     id:string
 }
 
 export class TableRefRenderer extends React.Component<TableRefRendererProps,any> {
     render() {
-        return <Label>{this.props.id}</Label>
+        return <Label>{this.props.table} - {this.props.id}</Label>
     }
 }
 
@@ -58,11 +59,11 @@ export class NestedTableRenderer extends React.Component<NestedTableRendererProp
     }
 }
 
-interface TileRendererProps{
+interface SpriteRendererProps{
     id:string
 }
 
-export class TileRenderer extends React.Component<TileRendererProps,any> {
+export class SpriteRenderer extends React.Component<SpriteRendererProps,any> {
     render() {
         let tile = getTile(this.props.id)
         if(tile!==undefined) {

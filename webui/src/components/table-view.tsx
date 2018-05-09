@@ -37,7 +37,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             }
         }
     
-        return <Table>
+        return <div style={{overflowX:'auto'}}><Table>
             <Table.Header>
                 <Table.Row>
                     {names.map(n=><Table.HeaderCell>{n}</Table.HeaderCell>)}
@@ -53,5 +53,6 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                 }
             </Table.Body>
         </Table>
+        </div>
     }
 }

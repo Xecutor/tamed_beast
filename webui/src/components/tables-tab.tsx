@@ -46,7 +46,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
             })
         }
         return <div>
-            Table:<Dropdown text={this.state.tableName} onChange={(e,{value})=>this.onTableChange(value as string)} options={tableList}/><br/>
+            Table:<Dropdown search selection text={this.state.tableName} onChange={(e,{value})=>this.onTableChange(value as string)} options={tableList}/><br/>
             <TableView table={this.state.table} tableDef={dbScheme[this.state.tableName]}/>
         </div>
     }
