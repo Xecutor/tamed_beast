@@ -1,16 +1,12 @@
 import { jsonrpcCall } from './jsonrpc'
+import { Rect, parseRect } from './rect'
 
 let images: { [key: string]: HTMLImageElement } = {}
 let imagesLoaded = 0
 
 type TileInfo = {
     img:HTMLImageElement,
-    rect:{
-        x:number,
-        y:number,
-        w:number,
-        h:number
-    }
+    rect:Rect
     file:string
 }
 
@@ -45,7 +41,8 @@ export function loadTiles(imgList: Array<{ Tilesheet: string, File: string }>, p
                 let tile = tbl[idx]
                 let ss = images[tile._filename]
                 let canvas = document.createElement("canvas");
-                let [x, y, w, h] = (tile.SourceRectangle as string).split(' ').map(v => parseInt(v));
+                let r = parseRect(tile.SourceRectangle as string)
+                let {x, y, w, h} = r
                 canvas.width = w
                 canvas.height = h
                 let ctx = canvas.getContext('2d')
@@ -62,7 +59,7 @@ export function loadTiles(imgList: Array<{ Tilesheet: string, File: string }>, p
 
                 let tileImg = new Image
                 tileImg.src = canvas.toDataURL("image/png")
-                tiles[tile.ID] = {img:tileImg, file:tile._filename, rect:{x,y,w,h}}
+                tiles[tile.ID] = {img:tileImg, file:tile._filename, rect:r}
                 ++idx
                 if ((idx % 50) == 0) {
                     break
@@ -70,13 +67,13 @@ export function loadTiles(imgList: Array<{ Tilesheet: string, File: string }>, p
             }
             if (idx < tbl.length) {
                 progressReporter("Preparing tiles", idx, false)
-                setTimeout(prepareTileBatch, 10);
+                setTimeout(prepareTileBatch, 5);
             }
             else {
                 progressReporter("Complete", 0, true)
             }
         }
-        setTimeout(prepareTileBatch, 10)
+        setTimeout(prepareTileBatch, 5)
     }
 }
 
@@ -90,4 +87,8 @@ export function getTilesList() {
 
 export function getTile(id:string) {
     return tiles[id]
+}
+
+export function getFileList() {
+    return Object.keys(images).sort()
 }

@@ -456,5 +456,5 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
     Time:[
         {name:'ID', type:new TString},
         {name:'Value', type:new TNumber},
-    ]
+    ],
 }
