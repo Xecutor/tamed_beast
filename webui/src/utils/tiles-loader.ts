@@ -89,6 +89,11 @@ export function getTile(id:string) {
     return tiles[id]
 }
 
+export function getTileImageFile(tile:TileInfo) {
+    let url = getImage(tile.file).src
+    return url.substr(url.lastIndexOf('/') + 1)
+}
+
 export function getFileList() {
     return Object.keys(images).sort()
 }

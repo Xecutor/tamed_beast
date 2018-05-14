@@ -3,9 +3,9 @@ import * as ReactDOM from "react-dom";
 
 import {Button, Grid, Label, Input, Dropdown} from 'semantic-ui-react'
 
-import {getTile, getTilesList, getImage, getFileList} from '../utils/tiles-loader'
+import {getTile, getTilesList, getImage, getFileList, getTileImageFile} from '../utils/tiles-loader'
 
-import {Rect, rectToString} from '../utils/rect'
+import {Rect, mkRect, rectToString, parseRect} from '../utils/rect'
 
 enum TileMode{
     view,
@@ -127,11 +127,31 @@ export class BaseTilesTab extends React.Component<BaseTilesTabProps, BaseTilesTa
     }
 
     switchToEditMode() {
-        this.setState({mode:TileMode.edit})
+        let tile = getTile(this.state.selected)
+        this.setState({
+            mode:TileMode.edit,
+            editId:this.state.selected,
+            editDef:tile.file,
+            editRect:tile.rect,
+            editImg:getTileImageFile(tile)
+        })
     }
 
     switchToInsertMode() {
-        this.setState({mode:TileMode.insert})
+        let defFile = ''
+        let imgFile = ''
+        if(this.state.selected) {
+            let tile = getTile(this.state.selected)
+            defFile = tile.file
+            imgFile = getTileImageFile(tile)
+        }
+        this.setState({
+            mode:TileMode.insert,
+            editId:'',
+            editDef:defFile,
+            editImg:imgFile,
+            editRect:mkRect(0,0,32,32)
+        })
     }
 
     cancelEditMode() {
@@ -185,9 +205,7 @@ export class BaseTilesTab extends React.Component<BaseTilesTabProps, BaseTilesTa
         if(id.length && this.state.mode==TileMode.view) {
             let tile = getTile(id)
             defFile = tile.file
-            tileFile = getImage(defFile).src
-            let slash = tileFile.lastIndexOf('/')
-            tileFile=tileFile.substr(slash + 1)
+            tileFile = getTileImageFile(tile)
             rect = tile.rect
         }
         else {
@@ -204,7 +222,7 @@ export class BaseTilesTab extends React.Component<BaseTilesTabProps, BaseTilesTa
         let middleColumn;
         if(this.state.mode==TileMode.view) {
             middleColumn=<div>
-                <Button onClick={()=>this.switchToEditMode()}>Edit</Button>
+                <Button disabled={this.state.selected.length==0} onClick={()=>this.switchToEditMode()}>Edit</Button>
                 <Button onClick={()=>this.switchToInsertMode()}>Insert</Button><br/>
                 ID:{id}<br/>
                 Def file:{defFile}<br/>

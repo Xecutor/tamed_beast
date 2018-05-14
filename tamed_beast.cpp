@@ -101,8 +101,10 @@ int main(int argc, char* argv[])
         web_server web(1);
         web.init(config);
 
-        const std::string& tilesPath="D:/Games2/steamapps/common/Ingnomia/content/tilesheet";
-        const std::string& dataPath="D:/Games2/steamapps/common/Ingnomia/content/JSON";
+        const std::string& ingnomiaRoot = argc==1?"D:/Games2/steamapps/common/Ingnomia/" : argv[1];
+
+        const std::string& tilesPath=ingnomiaRoot + "content/tilesheet";
+        const std::string& dataPath=ingnomiaRoot + "content/JSON";
 
         json_rpc_service jsonrpc_svc(dataPath);
 
