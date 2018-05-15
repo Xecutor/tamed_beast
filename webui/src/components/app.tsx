@@ -3,14 +3,14 @@ import * as ReactDOM from "react-dom";
 
 import { WsHandler, jsonrpcInit, jsonrpcCall } from '../utils/jsonrpc'
 
-import { BaseTilesTab } from './base-tiles-tab'
-import { TilesTab } from './tiles-tab'
+import { BaseSpritesTab } from './base-sprites-tab'
+import { SpritesTab } from './sprites-tab'
 import { TablesTab } from './tables-tab'
 
 import { Tab, Loader } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css';
 
-import { loadTiles } from '../utils/tiles-loader'
+import { loadSprites } from '../utils/sprites-loader'
 
 interface TamedBeastAppState {
     tableList:Array<any>
@@ -60,7 +60,7 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
                 }
             }
         }
-        loadTiles(imgList, (stage, progress, done) => this.onTileLoadProgress(stage, progress, done))
+        loadSprites(imgList, (stage, progress, done) => this.onTileLoadProgress(stage, progress, done))
         this.setState({ tableList })
     }
 
@@ -71,12 +71,12 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
     render() {
         const panes = [
             {
-                menuItem: 'Base tiles',
-                render: () => <BaseTilesTab />
+                menuItem: 'Base sprites',
+                render: () => <BaseSpritesTab />
             },
             {
-                menuItem: 'Tiles',
-                render: () => <TilesTab />
+                menuItem: 'Sprites',
+                render: () => <SpritesTab />
             },
             {
                 menuItem: 'Tables',

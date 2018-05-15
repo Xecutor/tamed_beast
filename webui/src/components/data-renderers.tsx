@@ -3,7 +3,7 @@ import {Label} from 'semantic-ui-react'
 
 import {FieldDef, TypeDef} from '../database/scheme'
 import {TableView} from './table-view'
-import {getTile} from '../utils/tiles-loader'
+import {getBaseSprite} from '../utils/sprites-loader'
 
 interface StringRendererProps {
     value:string
@@ -65,9 +65,9 @@ interface SpriteRendererProps{
 
 export class SpriteRenderer extends React.Component<SpriteRendererProps,any> {
     render() {
-        let tile = getTile(this.props.id)
-        if(tile!==undefined) {
-            return <Label image={true}><img src={tile.img.src}/>{this.props.id}</Label>
+        let sprite = getBaseSprite(this.props.id)
+        if(sprite!==undefined) {
+            return <Label image={true}><img src={sprite.img.src}/>{this.props.id}</Label>
         }
         else {
             return <Label icon='question'>{this.props.id}</Label>

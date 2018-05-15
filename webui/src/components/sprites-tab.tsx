@@ -3,19 +3,19 @@ import * as ReactDOM from "react-dom";
 
 import {Table} from 'semantic-ui-react'
 
-interface TilesTabState{
+interface SpritesTabState{
 
 }
 
-interface TilesTabProps{
+interface SpritesTabProps{
 
 }
 
-export class TilesTab extends React.Component<TilesTabProps, TilesTabState>{
+export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState>{
     constructor(props:any) {
         super(props)
     }
     render() {
-        return <div>tiles</div>
+        return <div>Under construction</div>
     }
 }

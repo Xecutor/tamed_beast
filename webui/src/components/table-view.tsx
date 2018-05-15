@@ -40,13 +40,13 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         return <div style={{overflowX:'auto'}}><Table>
             <Table.Header>
                 <Table.Row>
-                    {names.map(n=><Table.HeaderCell>{n}</Table.HeaderCell>)}
+                    {names.map(n=><Table.HeaderCell key={n}>{n}</Table.HeaderCell>)}
                 </Table.Row>
             </Table.Header>
             <Table.Body>
                 {
                 this.props.table.map(row=>
-                    <Table.Row>
+                    <Table.Row key={row.ID}>
                     {names.map((n,idx)=><Table.Cell  style={{wordWrap:'break-word'}}>{this.renderItem(row[n], this.props.tableDef ? this.props.tableDef[idx].type: undefined)}</Table.Cell>)}
                     </Table.Row>
                 )

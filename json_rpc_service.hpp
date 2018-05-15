@@ -33,6 +33,7 @@ protected:
 
 class json_rpc_method_params{
 public:
+
     json_rpc_method_params(const rapidjson::Value& params):m_params(params)
     {
     }
@@ -44,8 +45,8 @@ public:
     const char* getString(const char* name)const;
     const char* getStringDefault(const char* name, const char* defaultValue)const;
 
-    rapidjson::Value::ConstArray getArray(const char* name, rapidjson::Type expectedType = rapidjson::kNullType);
-    rapidjson::Value::ConstObject getObject(const char* name);
+    rapidjson::Value::ConstArray getArray(const char* name, rapidjson::Type expectedType = rapidjson::kNullType)const;
+    const rapidjson::Value& getObject(const char* name)const;
 
 protected:
     const rapidjson::Value& m_params;
@@ -81,6 +82,7 @@ protected:
     void init();
     void prepare_db_map();
     void load_json_file(const std::string& filename, rapidjson::Document& doc);
+    void store_json_file(const std::string& filename, const rapidjson::Document& doc);
 
     const boost::filesystem::path m_data_path;
     using method_type = std::function<json_rpc_result(const json_rpc_method_params&)>;

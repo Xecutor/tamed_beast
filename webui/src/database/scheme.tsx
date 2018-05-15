@@ -57,8 +57,8 @@ class TNested implements TypeDef {
 class TArrayOf implements TypeDef {
     constructor(public itemType:TypeDef) {
     }
-    renderValue(value:string[]) {
-        return value.map(id=>this.itemType.renderValue(id) as JSX.Element)
+    renderValue(value:any[]) {
+        return value.map(item=>this.itemType.renderValue(item) as JSX.Element)
     }
 }
 

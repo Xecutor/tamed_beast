@@ -1,5 +1,7 @@
 #include "json_rpc_service.hpp"
 #include <rapidjson/filereadstream.h>
+#include <rapidjson/filewritestream.h>
+#include <rapidjson/prettywriter.h>
 #include <fmt/format.h>
 
 bool json_rpc_method_params::getBool(const char* name) const
@@ -65,7 +67,7 @@ const char* json_rpc_method_params::getStringDefault(const char* name, const cha
     return member->value.GetString();
 }
 
-rapidjson::Value::ConstArray json_rpc_method_params::getArray(const char* name, rapidjson::Type expectedType)
+rapidjson::Value::ConstArray json_rpc_method_params::getArray(const char* name, rapidjson::Type expectedType)const
 {
     auto member = m_params.FindMember(name);
     if (member == m_params.MemberEnd() || !member->value.IsArray()) {
@@ -81,13 +83,13 @@ rapidjson::Value::ConstArray json_rpc_method_params::getArray(const char* name, 
     return member->value.GetArray();
 }
 
-rapidjson::Value::ConstObject json_rpc_method_params::getObject(const char* name)
+const rapidjson::Value& json_rpc_method_params::getObject(const char* name)const
 {
     auto member = m_params.FindMember(name);
-    if (member == m_params.MemberEnd() || !member->value.IsArray()) {
+    if (member == m_params.MemberEnd() || !member->value.IsObject()) {
         throw json_rpc_exception(json_rpc_error::invalid_params, name);
     }
-    return member->value.GetObject();
+    return member->value;
 }
 
 json_rpc_service::json_rpc_service(const boost::filesystem::path& data_path):m_data_path(data_path)
@@ -141,13 +143,42 @@ void json_rpc_service::load_json_file(const std::string& filename, rapidjson::Do
     }
     std::unique_ptr<FILE, decltype(&fclose)> fguard(f, &fclose);
     char buf[4096];
-    rapidjson::FileReadStream ss(f, buf, sizeof(buf));
-    doc.ParseStream<rapidjson::kParseCommentsFlag|rapidjson::kParseTrailingCommasFlag>(ss);
+    rapidjson::FileReadStream frs(f, buf, sizeof(buf));
+    doc.ParseStream<rapidjson::kParseCommentsFlag|rapidjson::kParseTrailingCommasFlag>(frs);
     if(doc.HasParseError()) {
-        throw json_rpc_exception(json_rpc_error::file_parse_error, fmt::format("Fike '{}', error at offset {}", filename, doc.GetErrorOffset()));
+        throw json_rpc_exception(json_rpc_error::file_parse_error, fmt::format("File '{}', error at offset {}", filename, doc.GetErrorOffset()));
     }
 }
 
+void json_rpc_service::store_json_file(const std::string& filename, const rapidjson::Document& doc)
+{
+    auto path = m_data_path / filename;
+    auto backup_path = path;
+    int idx = 0;
+
+    do{
+        backup_path = path;
+        auto ext = backup_path.extension();
+        backup_path.replace_extension(fmt::format("{:03}", idx));
+        backup_path += ext;
+        ++idx;
+    }while(boost::filesystem::exists(backup_path));
+
+    boost::filesystem::rename(path, backup_path);
+
+    FILE* f = fopen(path.string().c_str(), "wb");
+    if (!f) {
+        throw json_rpc_exception(json_rpc_error::file_open_error, path.string().c_str());
+    }
+    std::unique_ptr<FILE, decltype(&fclose)> fguard(f, &fclose);
+
+    char buf[4096];
+    rapidjson::FileWriteStream fws(f, buf, sizeof(buf));
+    rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(fws);
+    writer.SetIndent('\t', 1);
+    doc.Accept(writer);
+
+}
 
 void json_rpc_service::registerMethod(const char* name, method_type function)
 {
@@ -186,6 +217,12 @@ json_rpc_result json_rpc_service::select_method(const json_rpc_method_params& pa
 
 json_rpc_result json_rpc_service::insert_method(const json_rpc_method_params& params)
 {
+    rapidjson::Document doc;
+    const std::string filename = params.getString("_filename");
+    load_json_file(filename, doc);
+    rapidjson::Value obj(params.getObject("object"), doc.GetAllocator());
+    doc.GetArray().PushBack(obj, doc.GetAllocator());
+    store_json_file(filename, doc);
     return {};
 }
 
