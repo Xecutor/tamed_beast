@@ -24,11 +24,13 @@ public:
 class web_server{
 public:
     struct config{
-        std::string address;
-        uint16_t port;
-        std::string webroot;
+        size_t threads_count = 1;
+        std::string address = "127.0.0.1";
+        uint16_t port = 18759;
+        std::string webroot = "webroot";
+        bool debug = false;
     };
-    web_server(size_t argThreads);
+    web_server();
     ~web_server();
     bool init(const config& argConfig);
     void run();

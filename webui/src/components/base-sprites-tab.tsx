@@ -10,9 +10,10 @@ import {
     getBaseSpriteList,
     getImage,
     getFileList,
-    getBaseSpriteImageFile} from '../utils/sprites-loader'
+    getBaseSpriteImageFile,
+    updateSpriteDefinition} from '../utils/sprites-loader'
 
-import {Rect, mkRect, copyRect, rectToString, parseRect} from '../utils/rect'
+import {Rect, mkRect, rectToString, parseRect} from '../utils/rect'
 import { jsonrpcCall } from "../utils/jsonrpc";
 
 enum BaseSpriteMode{
@@ -29,7 +30,7 @@ interface BaseSpriteTabState{
 
     editId:string,
     editDef:string,
-    editRect:{x:number, y:number, w:number, h:number}
+    editRect:Rect
     editModified:boolean
 }
 
@@ -208,9 +209,17 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
     saveChanges() {
         const id = this.state.editId
         const defFile = this.state.editDef
-        const rect = copyRect(this.state.editRect)
+        const rect = {...this.state.editRect}
         if(this.state.mode==BaseSpriteMode.edit) {
-
+            jsonrpcCall("update",{
+                _filename:defFile, 
+                object:{
+                    ID:id,
+                    SourceRectangle:rectToString(this.state.editRect)
+                }}).then(()=>{
+                    updateSpriteDefinition(id, rect)
+                    this.setState({mode:BaseSpriteMode.view, selectedId:id})
+                });
         }
         else {
             jsonrpcCall("insert",{

@@ -68,7 +68,18 @@ public:
     template <class T>
     void push_back(T&& item)
     {
+        if ( m_result.GetType() != rapidjson::kArrayType ) {
+            m_result.SetArray();
+        }
         m_result.PushBack(item, m_result.GetAllocator());
+    }
+    template <size_t N, class T>
+    void addMember(const char (&name)[N], T value)
+    {
+        if ( m_result.GetType() != rapidjson::kObjectType ) {
+            m_result.SetObject();
+        }
+        m_result.GetObject().AddMember(name, value, m_result.GetAllocator());
     }
 protected:
     rapidjson::Document m_result;
@@ -76,15 +87,15 @@ protected:
 
 class json_rpc_service{
 public:
-    json_rpc_service(const boost::filesystem::path& data_path);
+    json_rpc_service();
+    void init(const boost::filesystem::path& data_path);
     json_rpc_result callMethod(const char* methodName, const json_rpc_method_params& params)const;
 protected:
-    void init();
     void prepare_db_map();
     void load_json_file(const std::string& filename, rapidjson::Document& doc);
     void store_json_file(const std::string& filename, const rapidjson::Document& doc);
 
-    const boost::filesystem::path m_data_path;
+    boost::filesystem::path m_data_path;
     using method_type = std::function<json_rpc_result(const json_rpc_method_params&)>;
     struct method_record{
         method_type method;

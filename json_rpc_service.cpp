@@ -92,11 +92,22 @@ const rapidjson::Value& json_rpc_method_params::getObject(const char* name)const
     return member->value;
 }
 
-json_rpc_service::json_rpc_service(const boost::filesystem::path& data_path):m_data_path(data_path)
+json_rpc_service::json_rpc_service()
 {
-    init();
 }
 
+void json_rpc_service::init(const boost::filesystem::path& data_path)
+{
+    m_data_path = data_path;
+
+    registerMethod("get_db_list",[this](const json_rpc_method_params& params){return get_db_list_method(params);});
+    registerMethod("select",[this](const json_rpc_method_params& params){return select_method(params);});
+    registerMethod("insert",[this](const json_rpc_method_params& params){return insert_method(params);});
+    registerMethod("update",[this](const json_rpc_method_params& params){return update_method(params);});
+    registerMethod("delete",[this](const json_rpc_method_params& params){return delete_method(params);});
+
+    prepare_db_map();
+}
 
 json_rpc_result json_rpc_service::callMethod(const char* methodName, const json_rpc_method_params& params)const
 {
@@ -105,17 +116,6 @@ json_rpc_result json_rpc_service::callMethod(const char* methodName, const json_
         throw json_rpc_exception(json_rpc_error::method_not_found, methodName);
     }
     return it->second.method(params);
-}
-
-void json_rpc_service::init()
-{
-    registerMethod("get_db_list",[this](const json_rpc_method_params& params){return get_db_list_method(params);});
-    registerMethod("select",[this](const json_rpc_method_params& params){return select_method(params);});
-    registerMethod("insert",[this](const json_rpc_method_params& params){return insert_method(params);});
-    registerMethod("update",[this](const json_rpc_method_params& params){return update_method(params);});
-    registerMethod("delete",[this](const json_rpc_method_params& params){return delete_method(params);});
-
-    prepare_db_map();
 }
 
 void json_rpc_service::prepare_db_map()
@@ -223,12 +223,28 @@ json_rpc_result json_rpc_service::insert_method(const json_rpc_method_params& pa
     rapidjson::Value obj(params.getObject("object"), doc.GetAllocator());
     doc.GetArray().PushBack(obj, doc.GetAllocator());
     store_json_file(filename, doc);
-    return {};
+    json_rpc_result res;
+    res.addMember("status", 1);
+    return res;
 }
 
 json_rpc_result json_rpc_service::update_method(const json_rpc_method_params& params)
 {
-    return {};
+    rapidjson::Document doc;
+    const std::string filename = params.getString("_filename");
+    load_json_file(filename, doc);
+    rapidjson::Value obj(params.getObject("object"), doc.GetAllocator());
+
+    for(auto& item:doc.GetArray()) {
+        if ( item["ID"] == obj["ID"] ) {
+            item = obj;
+            break;
+        }
+    }
+    store_json_file(filename, doc);
+    json_rpc_result res;
+    res.addMember("status", 1);
+    return res;
 }
 
 json_rpc_result json_rpc_service::delete_method(const json_rpc_method_params& params)

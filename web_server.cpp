@@ -36,6 +36,10 @@ namespace ssl = boost::asio::ssl;               // from <boost/asio/ssl.hpp>
 namespace http = boost::beast::http;            // from <boost/beast/http.hpp>
 namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
 
+namespace {
+    bool debug_output;
+}
+
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type(boost::beast::string_view path)
 {
@@ -319,7 +323,9 @@ public:
 
     ~websocket_session()
     {
-        printf("~websocket_session()\n");
+        if(debug_output) {
+            printf("~websocket_session()\n");
+        }
     }
 
     // Start the asynchronous operation
@@ -491,7 +497,9 @@ public:
         for(auto& b:m_buffer.data()) {
             data.append(static_cast<const char*>(b.data()), b.size());
         }
-        printf("in data:[%s]\n", data.c_str());
+        if(debug_output) {
+            printf("in data:[%s]\n", data.c_str());
+        }
 
         m_buffer.consume(m_buffer.size());
 
@@ -500,8 +508,10 @@ public:
             ws_responder_impl(std::string& argResponse):response(argResponse){}
             void respond(const std::string& data)override
             {
-                fmt::printf("out data:[%s], size=%u\n", data, data.size());
-                fflush(stdout);
+                if(debug_output) {
+                    fmt::printf("out data:[%s], size=%u\n", data, data.size());
+                    fflush(stdout);
+                }
                 response=data;
             }
         };
@@ -539,7 +549,9 @@ public:
             return;
         }
 
-        fmt::printf("bytes_transferred=%u, m_buffer.size()=%u\n", bytes_transferred, m_buffer.size());
+        if ( debug_output ) {
+            fmt::printf("bytes_transferred=%u, m_buffer.size()=%u\n", bytes_transferred, m_buffer.size());
+        }
 
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
@@ -858,12 +870,16 @@ public:
         , m_strand(ioc.get_executor())
         , m_buffer(std::move(buffer))
     {
-        printf("[%p]http_session()\n", this);
+        if(debug_output) {
+            printf("[%p]http_session()\n", this);
+        }
     }
 
     ~http_session()
     {
-        printf("[%p]~http_session()\n", this);
+        if(debug_output) {
+            printf("[%p]~http_session()\n", this);
+        }
     }
 
     void do_read()
@@ -1419,13 +1435,14 @@ struct web_server::web_server_impl : public request_resolver{
     }
 };
 
-web_server::web_server(size_t argThreads)
+web_server::web_server()
 {
-    m_impl = std::make_unique<web_server_impl>(argThreads);
 }
 
 bool web_server::init(const config& argConfig)
 {
+    debug_output = argConfig.debug;
+    m_impl = std::make_unique<web_server_impl>(argConfig.threads_count);
     return m_impl->init(argConfig.address, argConfig.port, argConfig.webroot);
 }
 

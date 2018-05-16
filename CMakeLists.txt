@@ -19,7 +19,7 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 
-find_package(Boost 1.67 REQUIRED COMPONENTS system date_time filesystem locale)
+find_package(Boost 1.67 REQUIRED COMPONENTS system date_time filesystem locale program_options)
 find_package(OpenSSL REQUIRED)
 find_package(RapidJSON REQUIRED)
 find_package(fmt REQUIRED)
@@ -38,6 +38,7 @@ target_link_libraries(
     Boost::date_time
     Boost::filesystem
     Boost::locale
+    Boost::program_options
 
     fmt::fmt
 

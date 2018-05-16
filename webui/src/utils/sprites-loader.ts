@@ -135,3 +135,9 @@ export function addSpriteDefinition(defFile:string, id:string, rect:Rect) {
         file:defFile
     }
 }
+
+export function updateSpriteDefinition(id:string, rect:Rect) {
+    let sprite = baseSprites[id]
+    sprite.rect={...rect}
+    sprite.img = makeSpriteImage(sprite.file, rect)
+}
