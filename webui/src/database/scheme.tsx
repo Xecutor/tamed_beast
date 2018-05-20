@@ -4,6 +4,7 @@ import {StringRenderer, TableRefRenderer, ColorRenderer, NestedTableRenderer, Sp
 
 export interface TypeDef{
     renderValue(value:any):JSX.Element|JSX.Element[]
+    validate(value:any):boolean
 }
 
 export type FieldDef={
@@ -15,11 +16,17 @@ class TString implements TypeDef{
     renderValue(value:string) {
         return <StringRenderer value={value}/>
     }
+    validate(value:any) {
+        return typeof(value) === "string"
+    }
 }
 
 class TBoolean implements TypeDef{
     renderValue(value:boolean) {
         return <StringRenderer value={value.toString()}/>
+    }
+    validate(value:any) {
+        return typeof(value) === "boolean"
     }
 }
 
@@ -27,11 +34,17 @@ class TNumber implements TypeDef{
     renderValue(value:number) {
         return <StringRenderer value={typeof(value)==='number'?value.toString():typeof(value)==='string'?value:''}/>
     }
+    validate(value:any) {
+        return typeof(value) === "number" || typeof(value) === "string"
+    }
 }
 
 class TColor implements TypeDef{
     renderValue(value:string) {
         return <ColorRenderer value={value}/>
+    }
+    validate(value:any) {
+        return typeof(value) === "string"
     }
 }
 
@@ -41,6 +54,28 @@ class TTableRef implements TypeDef {
     renderValue(value:string) {
         return <TableRefRenderer table={this.refTable} id={value}/>
     }
+    validate(value:any) {
+        return typeof(value) === "string"
+    }
+}
+
+export function validateScheme(table:any[], scheme: FieldDef[]) {
+    let schemeMap : {[key:string]:FieldDef}  = {}
+    for(let item of scheme) {
+        schemeMap[item.name] = item
+    }
+    schemeMap['_filename'] = scheme[0]
+    for(let item of table) {
+        for(let key of Object.keys(item)) {
+            if(!schemeMap[key]) {
+                throw new Error(`Missing key '${key}'`)
+            }
+            if(!schemeMap[key].type.validate(item[key])) {
+                throw new Error(`Validation of key '${key}' failed`)
+            }
+        }
+    }
+    return true
 }
 
 class TNested implements TypeDef {
@@ -52,6 +87,9 @@ class TNested implements TypeDef {
         }
         return value?<NestedTableRenderer table={value} typeDef={this.def}/>:<span></span>
     }
+    validate(value:any) {
+        return validateScheme(value, this.def)
+    }
 }
 
 class TArrayOf implements TypeDef {
@@ -60,6 +98,9 @@ class TArrayOf implements TypeDef {
     renderValue(value:any[]) {
         return value.map(item=>this.itemType.renderValue(item) as JSX.Element)
     }
+    validate(value:any) {
+        return typeof(value) === "object" && value.length!=undefined
+    }
 }
 
 class TSpriteId implements TypeDef {
@@ -67,6 +108,9 @@ class TSpriteId implements TypeDef {
     }
     renderValue(value:string) {
         return <SpriteRenderer id={this.transform?this.transform(value):value} />
+    }
+    validate(value:any) {
+        return typeof(value) === "string"
     }
 }
 
@@ -82,11 +126,22 @@ class TOneOf implements TypeDef{
         }
         return <span>ERROR</span>
     }
+    validate(value:any) {
+        for(let def of this.defs) {
+            if((!def.detector || def.detector(value)) && def.def.validate(value)) {
+                return true
+            }
+        }
+        return false
+    }
 }
 
 class TCustomObject implements TypeDef{
     renderValue(value:any) {
         return <StringRenderer value={JSON.stringify(value)}/>
+    }
+    validate(value:any) {
+        return typeof(value) === "object"
     }
 }
 
@@ -108,7 +163,9 @@ const needsStatesScheme=[
 const plantsStatesScheme=[
     {name:'ID', type:new TString},
     {name:'SpriteID', type:new TSpriteId},
-    {name:'Harvest', type:new TBoolean}
+    {name:'Harvest', type:new TBoolean},
+    {name:'Layout', type:new TString},
+    {name:'Fell', type:new TBoolean},
 ]
 
 const plantsHarvestedItemScheme=[
@@ -121,16 +178,23 @@ const plantsOnHarvestScheme=[
     {name:'Action', type:new TString}
 ]
 
+const plantsOnFell=[
+    {name:'ItemID', type:new TTableRef('Items')},
+    {name:'MaterialID', type: new TTableRef('Materials')}
+]
+
 const treeLayoutScheme=[
     {name:'SpriteID', type:new TSpriteId},
     {name:'Offset', type:new TString},
-    {name:'Rotation', type:new TString}
+    {name:'Rotation', type:new TString},
+    {name:'FruitPos', type:new TBoolean},
 ]
 
 const actionSpriteIdScheme=[
     {name:'SpriteID', type:new TSpriteId},
     {name:'Offset', type:new TString},
     {name:'Rotate', type:new TBoolean},
+    {name:'type', type:new TString}, //???
 ]
 
 const actionTestTileScheme=[
@@ -147,6 +211,10 @@ const actionTestTileScheme=[
     {name:'Job', type:new TBoolean},
     {name:'Ramp', type:new TBoolean},
     {name:'StairsTop', type:new TBoolean},
+    {name:'Stairs', type:new TBoolean},
+    {name:'TreeClip', type:new TBoolean},
+    {name:'Stockpile', type:new TBoolean},
+    {name:'Room', type:new TBoolean},
 ]
 
 const constructionsSpritesScheme=[
@@ -168,8 +236,11 @@ const constructionsIntermediateSpritesScheme=[
 
 const craftsComponentsScheme=[
     {name:'ItemID', type:new TTableRef('Items')},
+    {name:'ClassID', type:new TString},
+    {name:'GroupID', type:new TString},
     {name:'Amount', type:new TNumber},
     {name:'AllowedMaterial', type:new TString},
+    {name:'AllowedMaterialType', type:new TArrayOf(new TString)},
 ]
 
 const craftsTechGainScheme=[
@@ -187,7 +258,7 @@ const craftsSkillGainScheme=[
 const craftsPrereqsScheme=[
     {name:'Category', type:new TString},
     {name:'TechGroup', type:new TString},
-    {name:'Value', type:new TString},
+    {name:'Value', type:new TNumber},
 ]
 
 const stringDetector=(value:any)=>typeof(value)==='string'
@@ -196,7 +267,8 @@ const jobsTasksScheme=[
     {name:'Task', type:new TString},
     {name:'Duration', type:new TNumber},
     {name:'Offset', type:new TString},
-    
+    {name:'ConstructionID', type:new TString},
+    {name:'Material', type:new TString},
 ]
 
 const jobsSpriteIdScheme=[
@@ -212,6 +284,7 @@ const jobsSpriteIdScheme=[
 const workshopsComponentsScheme=[
     {name:'Offset', type:new TString},
     {name:'SpriteID', type:new TSpriteId},
+    {name:'SpriteID2', type:new TSpriteId},
     {name:'ItemID', type:new TTableRef('Items')},
     {name:'MaterialItem', type:new TArrayOf(new TNumber)},
     {name:'WallRotation', type:new TString},
@@ -293,6 +366,7 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
     ],
     Animals:[
         {name:'ID', type:new TString},
+        {name:'AllowInWild', type:new TBoolean},
         {name:'SpriteID', type:new TSpriteId},
         {name:'Behavior', type:new TString},
         {name:'Speed', type:new TNumber},
@@ -312,6 +386,11 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'LosesFruitInSeason', type:new TString},
         {name:'GrowsInSeason', type:new TArrayOf(new TString)},
         {name:'GrowsIn', type:new TString},
+        {name:'IsKilledInSeason', type:new TTableRef('Seasons')},
+        {name:'ToolButtonSprite', type:new TString},
+        {name:'OnFell', type:new TNested(plantsOnFell)},
+        {name:'FruitItemID', type: new TTableRef('Items')},
+        {name:'NumFruitsPerSeason', type:new TNumber},
     ],
     TreeLayouts:[
         {name:'ID', type:new TString},
@@ -326,6 +405,7 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'Floor', type:new TBoolean},
         {name:'SpriteID', type:new TOneOf([{detector:stringDetector,def:new TSpriteId},{def:new TNested(actionSpriteIdScheme)}])},
         {name:'TestTile', type:new TNested(actionTestTileScheme)},
+        {name:'ConstructionSelect', type:new TBoolean}
     ],
     Constructions:[
         {name:'ID', type:new TString},
@@ -348,7 +428,12 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'Components', type:new TNested(craftsComponentsScheme)},
         {name:'TechGain', type:new TNested(craftsTechGainScheme)},
         {name:'SkillGain', type:new TNested(craftsSkillGainScheme)},
-        {name:'Prereqs', type:new TNested(craftsPrereqsScheme)}
+        {name:'Prereqs', type:new TNested(craftsPrereqsScheme)},
+        {name:'Amount', type:new TNumber},
+        {name:'BlueprintID', type:new TString},
+        {name:'MaterialItems', type:new TArrayOf(new TNumber)},
+        {name:'AllowedMaterialType', type: new TArrayOf(new TString)},
+        {name:'AllowedMaterial', type: new TArrayOf(new TString)},
     ],
     Jobs:[
         {name:'ID', type:new TString},
@@ -361,6 +446,8 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'SpriteID', type:new TNested(jobsSpriteIdScheme)},
         {name:'SkillGain', type:new TString},
         {name:'TechGain', type:new TString},
+        {name:'ConstructionType', type:new TString},
+        {name:'Staging', type:new TArrayOf(new TArrayOf(new TNumber))},
     ],
     Workshops:[
         {name:'ID', type:new TString},
@@ -370,6 +457,7 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'Crafts', type:new TArrayOf(new TTableRef('Items'))},
         {name:'Components', type:new TNested(workshopsComponentsScheme)},
         {name:'TestTile', type:new TNested(workshopsTestTileScheme)},
+        {name:'SpecialGui', type:new TString}
     ],
     Items:[
         {name:'ID', type:new TString},
@@ -380,6 +468,9 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'LightIntensity', type:new TNumber},
         {name:'DrinkValue', type:new TNumber},
         {name:'Components', type:new TNested(itemsComponentsScheme)},
+        {name:'IsContainer', type:new TBoolean},
+        {name:'IsTool', type:new TBoolean},
+        {name:'Nutrition', type: new TNumber}
     ],
     Furniture:[
         {name:'ID', type:new TString},
@@ -400,6 +491,7 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'Color', type:new TColor},
         {name:'Value', type:new TNumber},
         {name:'Strength', type:new TNumber},
+        {name:'GroupName', type:new TString}
     ],
     TerrainMaterials:[
         {name:'ID', type:new TString},
@@ -417,6 +509,7 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'Highest', type:new TNumber},
         {name:'Lowest', type:new TNumber},
         {name:'WallSprite', type:new TSpriteId},
+        {name:'RequiredToolLevel', type:new TNumber},
     ],
     MaterialToToolLevel:[
         {name:'ID', type:new TString},
@@ -442,6 +535,7 @@ export const dbScheme : {[key:string]:Array<FieldDef>}={
         {name:'MaterialID', type:new TTableRef('Materials')},
         {name:'Amount', type:new TNumber},
         {name:'Content', type:new TNested(gameStartContentScheme)},
+        {name:'Color', type:new TColor},
     ],
     Tech:[
         {name:'ID', type:new TString},

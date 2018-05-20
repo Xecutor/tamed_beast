@@ -6,6 +6,7 @@ import { WsHandler, jsonrpcInit, jsonrpcCall } from '../utils/jsonrpc'
 import { BaseSpritesTab } from './base-sprites-tab'
 import { SpritesTab } from './sprites-tab'
 import { TablesTab } from './tables-tab'
+import { OtherTab } from './other-tab'
 
 import { Tab, Loader } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css';
@@ -82,6 +83,10 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
                 menuItem: 'Tables',
                 render: () => <TablesTab tableList={this.state.tableList}/>
             },
+            {
+                menuItem: 'Other',
+                render: () => <OtherTab tableList={this.state.tableList}/>
+            }
         ]
 
         let mainComponent = this.state.tilesLoaded ? <Tab panes={panes}></Tab> : <Loader active={true}>{`${this.state.loadStage} [${this.state.progress}]`}</Loader>;
