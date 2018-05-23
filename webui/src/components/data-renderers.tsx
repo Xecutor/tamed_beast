@@ -55,7 +55,7 @@ interface NestedTableRendererProps{
 export class NestedTableRenderer extends React.Component<NestedTableRendererProps,any> {
     render() {
         console.log('nestedtable',this.props.table)
-        return <TableView table={this.props.table} tableDef={this.props.typeDef}/>
+        return <TableView collapsable={true} initiallyCollapsed={true} table={this.props.table} tableDef={this.props.typeDef}/>
     }
 }
 

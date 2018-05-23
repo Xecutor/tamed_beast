@@ -65,13 +65,14 @@ export function validateScheme(table:any[], scheme: FieldDef[]) {
         schemeMap[item.name] = item
     }
     schemeMap['_filename'] = scheme[0]
-    for(let item of table) {
+    for(let idx=0;idx<table.length;++idx) {
+        let item = table[idx]
         for(let key of Object.keys(item)) {
             if(!schemeMap[key]) {
-                throw new Error(`Missing key '${key}'`)
+                throw new Error(`Missing key '${key}', ID=${item.ID?item.ID:idx}, file ${item._filename}`)
             }
             if(!schemeMap[key].type.validate(item[key])) {
-                throw new Error(`Validation of key '${key}' failed`)
+                throw new Error(`Validation of key '${key}' failed, ID=${item.ID?item.ID:idx}, file ${item._filename}`)
             }
         }
     }
