@@ -1,7 +1,9 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import {List, Button, Grid, Label, Input, Dropdown} from 'semantic-ui-react'
+import {Segment, List, Button, Grid, Label, Input, Dropdown} from 'semantic-ui-react'
+
+import {FilteredList} from './filtered-list'
 
 import {
     addSpriteDefinition,
@@ -23,7 +25,6 @@ enum BaseSpriteMode{
 }
 
 interface BaseSpriteTabState{
-    filter:string
     selectedId:string
     displayedImgDef:string
     mode:BaseSpriteMode
@@ -43,7 +44,6 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
     constructor(props:any) {
         super(props)
         this.state={
-            filter:'',
             selectedId:'',
             displayedImgDef:'',
             mode:BaseSpriteMode.view,
@@ -85,10 +85,6 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
         }
     }
     
-    onFilterChange(filter:string) {
-        this.setState({filter})
-    }
-
     onCanvasClick(evt:React.MouseEvent<HTMLCanvasElement>) {
         let br = this.canvas.getBoundingClientRect()
         let cx = (evt.clientX-br.left) * this.canvas.width/br.width
@@ -281,7 +277,6 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
     }
 
     render() {
-        let spriteList : string[] = []
         let id = this.state.mode==BaseSpriteMode.view?this.state.selectedId:this.state.editId
         let defFile = this.state.displayedImgDef
         let spriteFile = defFile ? getImageFile(defFile) : ''
@@ -294,93 +289,108 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
             rect = this.state.editRect
         }
 
-        if(this.state.filter.length) {
-            let flt=this.state.filter.toUpperCase()
-            spriteList = getBaseSpriteList().filter(val=>val.toUpperCase().indexOf(flt)!=-1)
-        }
-
         let middleColumn;
         if(this.state.mode==BaseSpriteMode.view) {
-            middleColumn=<div>
-                <Button disabled={this.state.selectedId.length==0} onClick={()=>this.switchToEditMode()}>Edit</Button>
-                <Button onClick={()=>this.switchToInsertMode()}>Insert</Button><br/>
+            middleColumn=[
+                <Segment>
+                    <Button disabled={this.state.selectedId.length==0} onClick={()=>this.switchToEditMode()}>Edit</Button>
+                    <Button onClick={()=>this.switchToInsertMode()}>Insert</Button>
+                </Segment>,
+                <Segment>
                 ID:{id}<br/>
                 Def file:{defFile}<br/>
                 Img file:{spriteFile}<br/>
                 Rect:{rectToString(rect)}
-            </div>
+                </Segment>
+            ]
         }
         else {
             let filesOptions=this.makeFileListOptions(this.state.editDef)
-            middleColumn=<div>
-                ID:{
-                    this.state.mode==BaseSpriteMode.edit?id:<Input onChange={(e,{value})=>this.onEditIdChange(value)}value={id}/>
-                }<br/>
-                Def file:{
-                    this.state.mode==BaseSpriteMode.edit?
-                    defFile:
-                    <Dropdown options={filesOptions} value={this.state.editDef} onChange={(e,{value})=>this.onDefFileChange(value as string)}/>}<br/>
-                Img file:{spriteFile}<br/>
-                Rect:<br/>
-                <Grid verticalAlign='middle'>
-                    <Grid.Row>
-                        <Grid.Column>
-                            X:
-                        </Grid.Column>
-                        <Grid.Column>
-                            <Input type='number' onChange={(e, {value})=>this.onXChange(value)} value={rect.x}/><br/>
-                        </Grid.Column>
-                    </Grid.Row>
-                    <Grid.Row>
-                        <Grid.Column>
-                            Y:
-                        </Grid.Column>
-                        <Grid.Column>
-                            <Input type='number' onChange={(e, {value})=>this.onYChange(value)} value={rect.y}/><br/>
-                        </Grid.Column>
-                    </Grid.Row>
-                    <Grid.Row>
-                        <Grid.Column>
-                            W:
-                        </Grid.Column>
-                        <Grid.Column>
-                            <Input type='number' onChange={(e, {value})=>this.onWChange(value)} value={rect.w}/><br/>
-                        </Grid.Column>
-                    </Grid.Row>
-                    <Grid.Row>
-                        <Grid.Column>
-                            H:
-                        </Grid.Column>
-                        <Grid.Column>
-                            <Input type='number' onChange={(e, {value})=>this.onHChange(value)} value={rect.h}/><br/>
-                        </Grid.Column>
-                    </Grid.Row>
-                    <Grid.Row columns={1}>
-                        <Grid.Column>
-                            <Button disabled={!this.canSave()} onClick={()=>this.saveChanges()}>Save</Button><Button onClick={()=>this.cancelEditMode()}>Cancel</Button>
-                        </Grid.Column>
-                    </Grid.Row>
-                </Grid>
-            </div>
+            middleColumn=[
+                <Segment>
+                    ID:{
+                        this.state.mode==BaseSpriteMode.edit?id:<Input onChange={(e,{value})=>this.onEditIdChange(value)}value={id}/>
+                    }<br/>
+                    Def file:{
+                        this.state.mode==BaseSpriteMode.edit?
+                        defFile:
+                        <Dropdown options={filesOptions} value={this.state.editDef} onChange={(e,{value})=>this.onDefFileChange(value as string)}/>}<br/>
+                    Img file:{spriteFile}<br/>
+                    Rect:<br/>
+                    <Grid verticalAlign='middle'>
+                        <Grid.Row>
+                            <Grid.Column>
+                                X:
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Input type='number' onChange={(e, {value})=>this.onXChange(value)} value={rect.x}/><br/>
+                            </Grid.Column>
+                        </Grid.Row>
+                        <Grid.Row>
+                            <Grid.Column>
+                                Y:
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Input type='number' onChange={(e, {value})=>this.onYChange(value)} value={rect.y}/><br/>
+                            </Grid.Column>
+                        </Grid.Row>
+                        <Grid.Row>
+                            <Grid.Column>
+                                W:
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Input type='number' onChange={(e, {value})=>this.onWChange(value)} value={rect.w}/><br/>
+                            </Grid.Column>
+                        </Grid.Row>
+                        <Grid.Row>
+                            <Grid.Column>
+                                H:
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Input type='number' onChange={(e, {value})=>this.onHChange(value)} value={rect.h}/><br/>
+                            </Grid.Column>
+                        </Grid.Row>
+                    </Grid>
+                </Segment>,
+                <Segment>
+                    <Button disabled={!this.canSave()} onClick={()=>this.saveChanges()}>Save</Button>
+                    <Button onClick={()=>this.cancelEditMode()}>Cancel</Button>
+                </Segment>
+            ]
         }
+
+        // <!--Input icon='search' onChange={(e,{value})=>this.onFilterChange(value)}/><br/>
+        // <List>
+        //     {spriteList.map(id=><List.Item key={id} as='a' image={getBaseSprite(id).img.src} content={id} onClick={()=>this.onSpriteClick(id)}/>)}
+        // </List-->
 
         return <div>
             <Grid columns={3}>
                 <Grid.Row>
                     <Grid.Column width={3}>
-                        <Input icon='search' onChange={(e,{value})=>this.onFilterChange(value)}/><br/>
-                        <List>
-                            {spriteList.map(id=><List.Item key={id} as='a' image={getBaseSprite(id).img.src} content={id} onClick={()=>this.onSpriteClick(id)}/>)}
-                        </List>
+                        <FilteredList
+                            data={getBaseSpriteList()}
+                            filterItem={(id:string,flt:string)=>id.toUpperCase().indexOf(flt.toUpperCase())>=0}
+                            getItemImageURL={(id:string)=>getBaseSprite(id).img.src}
+                            getItemText={(id:string)=>id}
+                            onClick={id=>this.onSpriteClick(id)}
+                        />
                     </Grid.Column>
                     <Grid.Column width={3}>
-                        {middleColumn}
+                        <Segment.Group>
+                            {middleColumn}
+                        </Segment.Group>
                     </Grid.Column>
                     <Grid.Column floated={'left'}>
-                        <Button disabled={this.state.displayedImgDef.length==0} onClick={()=>this.markAssigned()}>Mark assigned</Button>
-                        <Dropdown disabled={this.state.mode!=BaseSpriteMode.view} options={this.makeFileListOptions(this.state.displayedImgDef)} onChange={(e,{value})=>this.changeTileSheet(value as string)}/>
-                        <br/>
-                        <canvas onClick={(evt)=>this.onCanvasClick(evt)} ref={(canvas=>this.storeCanvas(canvas))}/>
+                        <Segment.Group compact>
+                            <Segment>
+                                <Button disabled={this.state.displayedImgDef.length==0} onClick={()=>this.markAssigned()}>Mark assigned</Button>
+                                <Dropdown disabled={this.state.mode!=BaseSpriteMode.view} options={this.makeFileListOptions(this.state.displayedImgDef)} onChange={(e,{value})=>this.changeTileSheet(value as string)}/>
+                            </Segment>
+                            <Segment>
+                                <canvas onClick={(evt)=>this.onCanvasClick(evt)} ref={(canvas=>this.storeCanvas(canvas))}/>
+                            </Segment>
+                        </Segment.Group>
                     </Grid.Column>
                 </Grid.Row>
             </Grid>

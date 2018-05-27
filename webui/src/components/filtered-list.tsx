@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import {List, Pagination, Label, Input, Dropdown} from 'semantic-ui-react'
+import {Segment, List, Pagination, Label, Input, Dropdown} from 'semantic-ui-react'
 
 interface FilteredListState{
     filter:string
@@ -11,6 +11,7 @@ interface FilteredListState{
 interface FilteredListProps<T>{
     data:Array<T>
     pageSize?:number
+    inverted?:boolean
     filterItem:(val:T, filter:string)=>boolean
     onClick:(val:T)=>void
     getItemImageURL:(val:T)=>string
@@ -49,30 +50,39 @@ export class FilteredList<T> extends React.Component<FilteredListProps<T>, Filte
         if (pages * pageSize != lst.length) {
             ++pages;
         }
-        console.log(`lst.length=${lst.length}, pages=${pages}`)
         let page = this.state.page
         if (page > pages) {
             page = pages
         }
 
         lst = lst.slice((page-1)*pageSize, page*pageSize)
-        console.log(`sz=${lst.length}`)
 
         let paginator
         if(pages>1) {
-            paginator=<span><Pagination totalPages={pages} activePage={page} onPageChange={(e,{activePage})=>this.onPageChange(activePage as number)}/><br/></span>
+            paginator=<div>
+                <Pagination 
+                    inverted={this.props.inverted}
+                    totalPages={pages}
+                    activePage={page}
+                    firstItem={null}
+                    lastItem={null}
+                    ellipsisItem={null}
+                    boundaryRange={0}
+                    pointing
+                    secondary                    onPageChange={(e,{activePage})=>this.onPageChange(activePage as number)}/>
+            </div>
         }
 
         let getImg=this.props.getItemImageURL
         let getTxt=this.props.getItemText
         let onClick=this.props.onClick
 
-        return <div>
-            <Input icon='search' value={this.state.filter} onChange={(e,{value})=>this.onFilterChange(value)}/><br/>
+        return <Segment inverted={this.props.inverted}>
+            <Input inverted={this.props.inverted} icon='search' value={this.state.filter} onChange={(e,{value})=>this.onFilterChange(value)}/><br/>
             {paginator}
-            <List>
-                {lst.map(val=><List.Item as='a' key={getTxt(val)} image={getImg(val)} content={getTxt(val)} onClick={()=>onClick(val)}/>)}
+            <List inverted={this.props.inverted}>
+                {lst.map(val=><List.Item style={{minHeight:'32px'}} as='a' key={getTxt(val)} image={getImg(val)} content={getTxt(val)} onClick={()=>onClick(val)}/>)}
             </List>
-        </div>
+        </Segment>
     }
 }

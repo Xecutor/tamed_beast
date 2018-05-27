@@ -27,12 +27,12 @@ type Effect = 'FlipHorizontal'
 type Tint = 'Material'
 type Season = 'Spring' | 'April' | 'May' | 'June' | 'Summer' | 'August' | 'September' | 'Autumn' | 'November' | 'December' | 'Winter' | 'February'
 
-type BaseSpriteRef = {
+export type BaseSpriteRef = {
     info: BaseSpriteInfo
     ID: string
 }
 
-type BaseSpriteRotation = {
+export type BaseSpriteRotation = {
     base?: BaseSpriteRef
     combine?: CombineInfo
     rotation: Rotation
@@ -49,30 +49,42 @@ function getRotationImg(br:BaseSpriteRotation) {
     return br.combine.img
 }
 
-type BaseSpriteSeasonChoice = {
+export type BaseSpriteSeasonChoice = {
     base?: BaseSpriteRef
     rotations?: Array<BaseSpriteRotation>
     season: Season
 }
 
-type CombineItem = {
+function getSeasonImg(seasons:Array<BaseSpriteSeasonChoice>) {
+    for(let season of seasons) {
+        if(season.base && season.base.ID=='empty') {
+            continue;
+        }
+        if(season.rotations) {
+            return getRotationImg(season.rotations[0])
+        }
+        return season.base.info.img
+    }
+}
+
+export type CombineItem = {
     base?: BaseSpriteRef,
     sprite?: SpriteInfo | string
     tint?: Tint
     offset?: Offset
 }
 
-type CombineInfo = {
+export type CombineInfo = {
     items: Array<CombineItem>
     img: HTMLImageElement
 }
 
-type IntermediateSprite = {
+export type IntermediateSprite = {
     base:BaseSpriteRef
     percent:number
 }
 
-type SpriteByMaterialType = {
+export type SpriteByMaterialType = {
     materialType : string
     sprite?:SpriteInfo
     base?:BaseSpriteRef
@@ -80,15 +92,16 @@ type SpriteByMaterialType = {
     rotations?:Array<BaseSpriteRotation>
 }
 
-type RandomSprite = {
+export type RandomSprite = {
     base?:BaseSpriteRef
     sprite?:SpriteInfo
     weight:number
 }
 
-type SpriteInfo = {
+export type SpriteInfo = {
     id: string
     offset?: Offset
+    tint?:string
     anim?:boolean
     rotations?: Array<BaseSpriteRotation>
     base?: BaseSpriteRef
@@ -348,7 +361,7 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
         }
 
         function makeSpriteByMaterial(def:any) : SpriteByMaterialType {
-            let materialType = def.materialType
+            let materialType = def.MaterialType
             let sprite : SpriteInfo
             let base : BaseSpriteRef
             let rotations : Array<BaseSpriteRotation>
@@ -406,6 +419,7 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                 let combine: CombineInfo
                 let byMaterial : Array<SpriteByMaterialType>
                 let frames : Array<BaseSpriteRef>
+                let tint = spriteDef.tint
 
                 try{
 
@@ -475,12 +489,7 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                         }
                     }
                     else if(seasons) {
-                        if(seasons[0].base) {
-                            img = seasons[0].base.info.img
-                        }
-                        else {
-                            img = getRotationImg(seasons[0].rotations[0])
-                        }
+                        img=getSeasonImg(seasons)
                     }
                     else if(frames) {
                         img = frames[0].info.img
@@ -496,6 +505,7 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                         id,
                         base,
                         offset,
+                        tint,
                         anim,
                         img,
                         rotations,
@@ -561,6 +571,9 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                         console.warn(`${item.sprite.id} have no image on delayed combine`)
                     }
                 }
+                if(!item.offset && item.sprite.offset) {
+                    offsets[offsets.length-1] = item.sprite.offset
+                }
                 imgs.push(item.sprite.img)
             }
         }
@@ -579,8 +592,8 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
             w = Math.max(w, ww)
             h = Math.max(h, hh)
         }
-        
-        let canvas = document.createElement('canvas');
+
+        let canvas = document.createElement('canvas')
         canvas.width=w
         canvas.height=h
         let ctx = canvas.getContext('2d')
@@ -602,6 +615,7 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
             if(!sprite.combine.img) {
                 console.log(`Fixing combine sprite for ${ID}`)
                 makeCombinedSprite(sprite.combine)
+                sprite.img = sprite.combine.img
             }
         }
         if (sprite.byMaterial) {
@@ -655,6 +669,14 @@ export function getBaseSpriteList() {
 
 export function getBaseSprite(id: string) {
     return baseSprites[id]
+}
+
+export function getBaseSpriteImgURL(id: string) {
+    let baseSprite = getBaseSprite(id)
+    if(baseSprite) {
+        return baseSprite.img.src
+    }
+    return ''
 }
 
 export function getBaseSpriteImageFile(sprite: BaseSpriteInfo) {

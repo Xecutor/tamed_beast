@@ -70,26 +70,32 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
     }
 
     render() {
-        const panes = [
-            {
-                menuItem: 'Base sprites',
-                render: () => <BaseSpritesTab />
-            },
-            {
-                menuItem: 'Sprites',
-                render: () => <SpritesTab />
-            },
-            {
-                menuItem: 'Tables',
-                render: () => <TablesTab tableList={this.state.tableList}/>
-            },
-            {
-                menuItem: 'Other',
-                render: () => <OtherTab tableList={this.state.tableList}/>
-            }
-        ]
 
-        let mainComponent = this.state.tilesLoaded ? <Tab panes={panes}></Tab> : <Loader active={true}>{`${this.state.loadStage} [${this.state.progress}]`}</Loader>;
+        let mainComponent;
+        if(this.state.tilesLoaded) {
+            const panes = [
+                {
+                    menuItem: 'Base sprites',
+                    pane: <Tab.Pane><BaseSpritesTab /></Tab.Pane>
+                },
+                {
+                    menuItem: 'Sprites',
+                    pane: <Tab.Pane><SpritesTab /></Tab.Pane>
+                },
+                {
+                    menuItem: 'Tables',
+                    pane: <Tab.Pane><TablesTab tableList={this.state.tableList}/></Tab.Pane>
+                },
+                {
+                    menuItem: 'Other',
+                    pane: <Tab.Pane><OtherTab tableList={this.state.tableList}/></Tab.Pane>
+                }
+            ]
+            mainComponent = <Tab renderActiveOnly={false} panes={panes}></Tab>
+        }
+        else {
+            mainComponent = <Loader active={true}>{`${this.state.loadStage} [${this.state.progress}]`}</Loader>;
+        }
 
         return <div>
             <div>WS status:{this.state.wsStatus}</div>
