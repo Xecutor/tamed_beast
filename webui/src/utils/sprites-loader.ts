@@ -708,3 +708,13 @@ export function getSprite(id: string) {
 export function getSpriteList() {
     return Object.keys(sprites).sort()
 }
+
+export function getSpriteImgURL(id:string)
+{
+    let sprite = getSprite(id)
+    if(sprite && sprite.img) {
+        return sprite.img.src
+    }
+    console.warn(`Undefined sprite ${id}`)
+    return ''
+}

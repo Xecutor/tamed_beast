@@ -76,19 +76,19 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
             const panes = [
                 {
                     menuItem: 'Base sprites',
-                    pane: <Tab.Pane><BaseSpritesTab /></Tab.Pane>
+                    pane: <Tab.Pane key='base_sprites'><BaseSpritesTab /></Tab.Pane>
                 },
                 {
                     menuItem: 'Sprites',
-                    pane: <Tab.Pane><SpritesTab /></Tab.Pane>
+                    pane: <Tab.Pane key='sprites'><SpritesTab /></Tab.Pane>
                 },
                 {
                     menuItem: 'Tables',
-                    pane: <Tab.Pane><TablesTab tableList={this.state.tableList}/></Tab.Pane>
+                    pane: <Tab.Pane key='tables'><TablesTab tableList={this.state.tableList}/></Tab.Pane>
                 },
                 {
                     menuItem: 'Other',
-                    pane: <Tab.Pane><OtherTab tableList={this.state.tableList}/></Tab.Pane>
+                    pane: <Tab.Pane key='other'><OtherTab tableList={this.state.tableList}/></Tab.Pane>
                 }
             ]
             mainComponent = <Tab renderActiveOnly={false} panes={panes}></Tab>

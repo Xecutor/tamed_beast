@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Checkbox, Grid, Label, List, Segment } from 'semantic-ui-react';
-import { BaseSpriteRef, BaseSpriteRotation, CombineInfo, IntermediateSprite, SpriteInfo, getBaseSpriteImgURL, getSprite, getSpriteList, RandomSprite, BaseSpriteSeasonChoice } from "../utils/sprites-loader";
+import { BaseSpriteRef, BaseSpriteRotation, CombineInfo, IntermediateSprite, SpriteInfo, getBaseSpriteImgURL, getSprite, getSpriteList, RandomSprite, BaseSpriteSeasonChoice, getSpriteImgURL } from "../utils/sprites-loader";
 import { FilteredList } from './filtered-list';
 
 import {offsetToString} from '../utils/offset';
@@ -13,15 +13,6 @@ interface SpritesTabState{
 
 interface SpritesTabProps{
 
-}
-
-function getSpriteURL(id:string)
-{
-    let sprite = getSprite(id)
-    if(sprite.img) {
-        return sprite.img.src
-    }
-    return ''
 }
 
 function convertArrayToList<T>(arr:T[]) {
@@ -64,7 +55,7 @@ export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState
     }
 
     makeShortSpriteDetals(sprite:SpriteInfo) {
-        return <span>Sprite:<Label image={getSpriteURL(sprite.id)} content={sprite.id}/></span>
+        return <span>Sprite:<Label image={getSpriteImgURL(sprite.id)} content={sprite.id}/></span>
     }
 
     makeCombineDetails(combine:CombineInfo) {
@@ -202,7 +193,7 @@ export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState
                             inverted={this.state.inverted}
                             data={getSpriteList()} 
                             filterItem={(id:string,flt:string)=>id.toUpperCase().indexOf(flt.toUpperCase())>=0}
-                            getItemImageURL={(id:string)=>getSpriteURL(id)}
+                            getItemImageURL={(id:string)=>getSpriteImgURL(id)}
                             getItemText={(id:string)=>id}
                             onClick={id=>this.onClick(id)}
                             />

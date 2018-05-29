@@ -1,78 +1,110 @@
 import * as React from "react";
 
-import {StringRenderer, TableRefRenderer, ColorRenderer, NestedTableRenderer, SpriteRenderer} from '../components/data-renderers'
+import { StringRenderer, TableRefRenderer, ColorRenderer, NestedTableRenderer, SpriteRenderer } from '../components/data-renderers'
 
-export interface TypeDef{
-    renderValue(value:any):JSX.Element|JSX.Element[]
-    validate(value:any):boolean
+import { StringEditor, NumberEditor, BoolEditor, ColorEditor, NestedTableEditor, SpriteIDEditor } from '../components/data-editors'
+
+export interface TypeDef {
+    renderValue(value: any): JSX.Element | JSX.Element[]
+    renderEditor?(name: string, value: any, onChange: (newValue: any) => void): JSX.Element
+    validate(value: any): boolean
+    copy(value: any): any
 }
 
-export type FieldDef={
-    name:string,
-    type:TypeDef
+export type FieldDef = {
+    name: string,
+    type: TypeDef
 }
 
-class TString implements TypeDef{
-    renderValue(value:string) {
-        return <StringRenderer value={value}/>
+class TString implements TypeDef {
+    renderValue(value: string) {
+        return <StringRenderer value={value} />
     }
-    validate(value:any) {
-        return typeof(value) === "string"
+    renderEditor(name: string, value: string, onChange: (newValue: string) => void) {
+        return <StringEditor key={name} name={name} value={value} onChange={onChange} />
     }
-}
-
-class TBoolean implements TypeDef{
-    renderValue(value:boolean) {
-        return <StringRenderer value={value.toString()}/>
+    validate(value: any) {
+        return typeof (value) === "string"
     }
-    validate(value:any) {
-        return typeof(value) === "boolean"
-    }
-}
-
-class TNumber implements TypeDef{
-    renderValue(value:number) {
-        return <StringRenderer value={typeof(value)==='number'?value.toString():typeof(value)==='string'?value:''}/>
-    }
-    validate(value:any) {
-        return typeof(value) === "number" || typeof(value) === "string"
+    copy(value: string) {
+        return value
     }
 }
 
-class TColor implements TypeDef{
-    renderValue(value:string) {
-        return <ColorRenderer value={value}/>
+class TBoolean implements TypeDef {
+    renderValue(value: boolean) {
+        return <StringRenderer value={value.toString()} />
     }
-    validate(value:any) {
-        return typeof(value) === "string"
+    renderEditor(name: string, value: boolean, onChange: (newValue: boolean) => void) {
+        return <BoolEditor key={name} name={name} value={value} onChange={onChange} />
+    }
+
+    validate(value: any) {
+        return typeof (value) === "boolean"
+    }
+    copy(value: boolean) {
+        return value;
+    }
+}
+
+class TNumber implements TypeDef {
+    renderValue(value: number) {
+        return <StringRenderer value={typeof (value) === 'number' ? value.toString() : typeof (value) === 'string' ? value : ''} />
+    }
+    renderEditor(name: string, value: number, onChange: (newValue: number) => void) {
+        return <NumberEditor key={name} name={name} value={value} onChange={onChange} />
+    }
+    validate(value: any) {
+        return typeof (value) === "number" || typeof (value) === "string"
+    }
+    copy(value: number) {
+        return value;
+    }
+}
+
+class TColor implements TypeDef {
+    renderValue(value: string) {
+        return <ColorRenderer value={value} />
+    }
+    renderEditor(name: string, value: string, onChange: (newValue: string) => void) {
+        return <ColorEditor key={name} name={name} value={value} onChange={onChange} />
+    }
+    validate(value: any) {
+        return typeof (value) === "string"
+    }
+    copy(value: string) {
+        return value;
     }
 }
 
 class TTableRef implements TypeDef {
-    constructor(public refTable:string) {
+    constructor(public refTable: string) {
     }
-    renderValue(value:string) {
-        return <TableRefRenderer table={this.refTable} id={value}/>
+    renderValue(value: string) {
+        return <TableRefRenderer table={this.refTable} id={value} />
     }
-    validate(value:any) {
-        return typeof(value) === "string"
+    validate(value: any) {
+        return typeof (value) === "string"
+    }
+    copy(value: string) {
+        return value;
     }
 }
 
-export function validateScheme(table:any[], scheme: FieldDef[]) {
-    let schemeMap : {[key:string]:FieldDef}  = {}
-    for(let item of scheme) {
+export function validateScheme(table: any[], scheme: FieldDef[]) {
+    let schemeMap: { [key: string]: FieldDef } = {}
+    for (let item of scheme) {
         schemeMap[item.name] = item
     }
     schemeMap['_filename'] = scheme[0]
-    for(let idx=0;idx<table.length;++idx) {
+    for (let idx = 0; idx < table.length; ++idx) {
         let item = table[idx]
-        for(let key of Object.keys(item)) {
-            if(!schemeMap[key]) {
-                throw new Error(`Missing key '${key}', ID=${item.ID?item.ID:idx}, file ${item._filename}`)
+        for (let key of Object.keys(item)) {
+            if (!schemeMap[key]) {
+                throw new Error(`Missing key '${key}', ID=${item.ID ? item.ID : idx}, file ${item._filename}`)
             }
-            if(!schemeMap[key].type.validate(item[key])) {
-                throw new Error(`Validation of key '${key}' failed, ID=${item.ID?item.ID:idx}, file ${item._filename}`)
+            if (!schemeMap[key].type.validate(item[key])) {
+                throw new Error(`Validation of key '${key}' failed, ID=${item.ID ? item.ID : idx}, file ${item._filename}`)
             }
         }
     }
@@ -80,476 +112,523 @@ export function validateScheme(table:any[], scheme: FieldDef[]) {
 }
 
 class TNested implements TypeDef {
-    constructor(public def:Array<FieldDef>) {
+    constructor(public def: FieldDef[]) {
     }
-    renderValue(value:any) {
-        if(value && value.length===undefined) {
-            value=[value]
+    renderValue(value: any) {
+        if (value && value.length === undefined) {
+            value = [value]
         }
-        return value?<NestedTableRenderer table={value} typeDef={this.def}/>:<span></span>
+        return value ? <NestedTableRenderer table={value} typeDef={this.def} /> : <span></span>
     }
-    validate(value:any) {
+    renderEditor(name: string, value: any, onChange: (newValue: any) => void) {
+        return <NestedTableEditor key={name} name={name} value={value} tableDef={this.def} onChange={onChange} />
+    }
+    validate(value: any) {
         return validateScheme(value, this.def)
+    }
+    copy(value: any[]) {
+        return copyTable(value, this.def)
     }
 }
 
 class TArrayOf implements TypeDef {
-    constructor(public itemType:TypeDef) {
+    constructor(public itemType: TypeDef) {
     }
-    renderValue(value:any[]) {
-        return value.map(item=>this.itemType.renderValue(item) as JSX.Element)
+    renderValue(value: any[]) {
+        return value.map(item => this.itemType.renderValue(item) as JSX.Element)
     }
-    validate(value:any) {
-        return typeof(value) === "object" && value.length!=undefined
+    validate(value: any) {
+        return typeof (value) === "object" && value.length != undefined
     }
-}
-
-class TSpriteId implements TypeDef {
-    constructor(public transform?:(val:string)=>string) {
-    }
-    renderValue(value:string) {
-        return <SpriteRenderer id={this.transform?this.transform(value):value} />
-    }
-    validate(value:any) {
-        return typeof(value) === "string"
+    copy(value: any[]) {
+        let rv: any[] = []
+        for (let item of value) {
+            rv.push(this.itemType.copy(item))
+        }
+        return rv
     }
 }
 
-class TOneOf implements TypeDef{
-    constructor(public defs:{detector?:(value:any)=>boolean, def:TypeDef}[]) {
+class TSpriteID implements TypeDef {
+    constructor(public transform?: (val: string) => string) {
+    }
+    renderValue(value: string) {
+        return <SpriteRenderer id={this.transform ? this.transform(value) : value} />
+    }
+    renderEditor(name: string, value: string, onChange: (newValue: string) => void) {
+        return <SpriteIDEditor key={name} name={name} value={this.transform?this.transform(value):value} onChange={onChange} />
+    }
+    validate(value: any) {
+        return typeof (value) === "string"
+    }
+    copy(value: string) {
+        return value;
+    }
+}
+
+class TOneOf implements TypeDef {
+    constructor(public defs: { detector?: (value: any) => boolean, def: TypeDef }[]) {
 
     }
-    renderValue(value:any) {
-        for(let td of this.defs) {
-            if(!td.detector || td.detector(value)) {
+    renderValue(value: any) {
+        for (let td of this.defs) {
+            if (!td.detector || td.detector(value)) {
                 return td.def.renderValue(value)
             }
         }
         return <span>ERROR</span>
     }
-    validate(value:any) {
-        for(let def of this.defs) {
-            if((!def.detector || def.detector(value)) && def.def.validate(value)) {
+    validate(value: any) {
+        for (let def of this.defs) {
+            if ((!def.detector || def.detector(value)) && def.def.validate(value)) {
                 return true
             }
         }
         return false
     }
+    copy(value: any) {
+        for (let def of this.defs) {
+            if (!def.detector || def.detector(value)) {
+                return def.def.copy(value)
+            }
+        }
+        return value
+    }
 }
 
-class TCustomObject implements TypeDef{
-    renderValue(value:any) {
-        return <StringRenderer value={JSON.stringify(value)}/>
+class TCustomObject implements TypeDef {
+    renderValue(value: any) {
+        return <StringRenderer value={JSON.stringify(value)} />
     }
-    validate(value:any) {
-        return typeof(value) === "object"
+    validate(value: any) {
+        return typeof (value) === "object"
+    }
+    copy(value: any) {
+        return { ...value }
     }
 }
 
-const stateModifierScheme=[
-    {name:'Type', type:new TString},
-    {name:'Attribute', type: new TString},
-    {name:'Value', type:new TNumber}
+export function copyRecord(record: any, defs: FieldDef[]) {
+    let rv: any = {}
+    for (let def of defs) {
+        if (record[def.name] !== undefined) {
+            rv[def.name] = def.type.copy(record[def.name])
+        }
+    }
+    return rv
+}
+
+export function copyTable(table:any[], defs:FieldDef[]) {
+    if (table === undefined) {
+        return table
+    }
+    return table.map((item:any)=>copyRecord(item, defs))
+}
+
+const stateModifierScheme = [
+    { name: 'Type', type: new TString },
+    { name: 'Attribute', type: new TString },
+    { name: 'Value', type: new TNumber }
 ]
 
-const needsStatesScheme=[
-    {name:'ID', type:new TString},
-    {name:'Threshold', type:new TNumber},
-    {name:'Priority', type: new TNumber},
-    {name:'ThoughtBubble', type: new TSpriteId((id)=>'Status'+id)},
-    {name:'Modifiers', type: new TNested(stateModifierScheme)},
-    {name:'Action', type:new TString}
+const needsStatesScheme = [
+    { name: 'ID', type: new TString },
+    { name: 'Threshold', type: new TNumber },
+    { name: 'Priority', type: new TNumber },
+    { name: 'ThoughtBubble', type: new TSpriteID((id) => 'Status' + id) },
+    { name: 'Modifiers', type: new TNested(stateModifierScheme) },
+    { name: 'Action', type: new TString }
 ]
 
-const plantsStatesScheme=[
-    {name:'ID', type:new TString},
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Harvest', type:new TBoolean},
-    {name:'Layout', type:new TString},
-    {name:'Fell', type:new TBoolean},
+const plantsStatesScheme = [
+    { name: 'ID', type: new TString },
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Harvest', type: new TBoolean },
+    { name: 'Layout', type: new TString },
+    { name: 'Fell', type: new TBoolean },
 ]
 
-const plantsHarvestedItemScheme=[
-    {name:'ItemID', type:new TString},
-    {name:'MaterialID', type:new TString},
-    {name:'Chance', type:new TNumber},
+const plantsHarvestedItemScheme = [
+    { name: 'ItemID', type: new TString },
+    { name: 'MaterialID', type: new TString },
+    { name: 'Chance', type: new TNumber },
 ]
-const plantsOnHarvestScheme=[
-    {name:'HarvestedItem', type:new TNested(plantsHarvestedItemScheme)},
-    {name:'Action', type:new TString}
-]
-
-const plantsOnFell=[
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'MaterialID', type: new TTableRef('Materials')}
+const plantsOnHarvestScheme = [
+    { name: 'HarvestedItem', type: new TNested(plantsHarvestedItemScheme) },
+    { name: 'Action', type: new TString }
 ]
 
-const treeLayoutScheme=[
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Offset', type:new TString},
-    {name:'Rotation', type:new TString},
-    {name:'FruitPos', type:new TBoolean},
+const plantsOnFell = [
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'MaterialID', type: new TTableRef('Materials') }
 ]
 
-const actionSpriteIdScheme=[
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Offset', type:new TString},
-    {name:'Rotate', type:new TBoolean},
-    {name:'type', type:new TString}, //???
+const treeLayoutScheme = [
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Offset', type: new TString },
+    { name: 'Rotation', type: new TString },
+    { name: 'FruitPos', type: new TBoolean },
 ]
 
-const actionTestTileScheme=[
-    {name:'Offset', type:new TString},
-    {name:'Floor', type:new TBoolean},
-    {name:'FloorSoil', type:new TBoolean},
-    {name:'Tree', type:new TBoolean},
-    {name:'Plant', type:new TBoolean},
-    {name:'PlantHasFruit', type:new TBoolean},
-    {name:'Wall', type:new TBoolean},
-    {name:'WallFree', type:new TBoolean},
-    {name:'Construction', type:new TBoolean},
-    {name:'Designation', type:new TBoolean},
-    {name:'Job', type:new TBoolean},
-    {name:'Ramp', type:new TBoolean},
-    {name:'StairsTop', type:new TBoolean},
-    {name:'Stairs', type:new TBoolean},
-    {name:'TreeClip', type:new TBoolean},
-    {name:'Stockpile', type:new TBoolean},
-    {name:'Room', type:new TBoolean},
+const actionSpriteIdScheme = [
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Offset', type: new TString },
+    { name: 'Rotate', type: new TBoolean },
+    { name: 'type', type: new TString }, //???
 ]
 
-const constructionsSpritesScheme=[
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Offset', type:new TString},
-    {name:'Type', type:new TString},
+const actionTestTileScheme = [
+    { name: 'Offset', type: new TString },
+    { name: 'Floor', type: new TBoolean },
+    { name: 'FloorSoil', type: new TBoolean },
+    { name: 'Tree', type: new TBoolean },
+    { name: 'Plant', type: new TBoolean },
+    { name: 'PlantHasFruit', type: new TBoolean },
+    { name: 'Wall', type: new TBoolean },
+    { name: 'WallFree', type: new TBoolean },
+    { name: 'Construction', type: new TBoolean },
+    { name: 'Designation', type: new TBoolean },
+    { name: 'Job', type: new TBoolean },
+    { name: 'Ramp', type: new TBoolean },
+    { name: 'StairsTop', type: new TBoolean },
+    { name: 'Stairs', type: new TBoolean },
+    { name: 'TreeClip', type: new TBoolean },
+    { name: 'Stockpile', type: new TBoolean },
+    { name: 'Room', type: new TBoolean },
 ]
 
-const constructionComponentsScheme=[
-    {name:'ItemID', type:new TTableRef('Items')},
+const constructionsSpritesScheme = [
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Offset', type: new TString },
+    { name: 'Type', type: new TString },
 ]
 
-const constructionsIntermediateSpritesScheme=[
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Offset', type:new TString},
-    {name:'Type', type:new TString},
-    {name:'Percent', type:new TNumber},
+const constructionComponentsScheme = [
+    { name: 'ItemID', type: new TTableRef('Items') },
 ]
 
-const craftsComponentsScheme=[
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'ClassID', type:new TString},
-    {name:'GroupID', type:new TString},
-    {name:'Amount', type:new TNumber},
-    {name:'AllowedMaterial', type:new TString},
-    {name:'AllowedMaterialType', type:new TArrayOf(new TString)},
+const constructionsIntermediateSpritesScheme = [
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Offset', type: new TString },
+    { name: 'Type', type: new TString },
+    { name: 'Percent', type: new TNumber },
 ]
 
-const craftsTechGainScheme=[
-    {name:'TechID', type:new TTableRef('Tech')},
-    {name:'Formula', type:new TString},
-    {name:'Args', type:new TCustomObject},
+const craftsComponentsScheme = [
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'ClassID', type: new TString },
+    { name: 'GroupID', type: new TString },
+    { name: 'Amount', type: new TNumber },
+    { name: 'AllowedMaterial', type: new TString },
+    { name: 'AllowedMaterialType', type: new TArrayOf(new TString) },
 ]
 
-const craftsSkillGainScheme=[
-    {name:'SkillID', type:new TTableRef('Skill')},
-    {name:'Formula', type:new TString},
-    {name:'Args', type:new TCustomObject},
+const craftsTechGainScheme = [
+    { name: 'TechID', type: new TTableRef('Tech') },
+    { name: 'Formula', type: new TString },
+    { name: 'Args', type: new TCustomObject },
 ]
 
-const craftsPrereqsScheme=[
-    {name:'Category', type:new TString},
-    {name:'TechGroup', type:new TString},
-    {name:'Value', type:new TNumber},
+const craftsSkillGainScheme = [
+    { name: 'SkillID', type: new TTableRef('Skill') },
+    { name: 'Formula', type: new TString },
+    { name: 'Args', type: new TCustomObject },
 ]
 
-const stringDetector=(value:any)=>typeof(value)==='string'
-
-const jobsTasksScheme=[
-    {name:'Task', type:new TString},
-    {name:'Duration', type:new TNumber},
-    {name:'Offset', type:new TString},
-    {name:'ConstructionID', type:new TString},
-    {name:'Material', type:new TString},
+const craftsPrereqsScheme = [
+    { name: 'Category', type: new TString },
+    { name: 'TechGroup', type: new TString },
+    { name: 'Value', type: new TNumber },
 ]
 
-const jobsSpriteIdScheme=[
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Offset', type:new TString},
-    {name:'Type', type:new TString},
-    {name:'Rotate', type:new TBoolean},
-    {name:'ConstructionID', type:new TTableRef('Construction')},
-    {name:'Material', type:new TString},
-    {name:'Duration', type:new TNumber},
+const stringDetector = (value: any) => typeof (value) === 'string'
+
+const jobsTasksScheme = [
+    { name: 'Task', type: new TString },
+    { name: 'Duration', type: new TNumber },
+    { name: 'Offset', type: new TString },
+    { name: 'ConstructionID', type: new TString },
+    { name: 'Material', type: new TString },
 ]
 
-const workshopsComponentsScheme=[
-    {name:'Offset', type:new TString},
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'SpriteID2', type:new TSpriteId},
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'MaterialItem', type:new TArrayOf(new TNumber)},
-    {name:'WallRotation', type:new TString},
+const jobsSpriteIdScheme = [
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Offset', type: new TString },
+    { name: 'Type', type: new TString },
+    { name: 'Rotate', type: new TBoolean },
+    { name: 'ConstructionID', type: new TTableRef('Construction') },
+    { name: 'Material', type: new TString },
+    { name: 'Duration', type: new TNumber },
 ]
 
-const workshopsTestTileScheme=[
-    {name:'Offset', type:new TString},
-    {name:'Floor', type:new TBoolean},
-    {name:'WallFree', type:new TBoolean},
+const workshopsComponentsScheme = [
+    { name: 'Offset', type: new TString },
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'SpriteID2', type: new TSpriteID },
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'MaterialItem', type: new TArrayOf(new TNumber) },
+    { name: 'WallRotation', type: new TString },
 ]
 
-const itemsComponentsScheme=[
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'NoMaterial', type:new TBoolean},
+const workshopsTestTileScheme = [
+    { name: 'Offset', type: new TString },
+    { name: 'Floor', type: new TBoolean },
+    { name: 'WallFree', type: new TBoolean },
 ]
 
-const itemGroupingGroupsScheme=[
-    {name:'GroupID', type:new TString},
-    {name:'Items', type:new TArrayOf(new TTableRef('Items'))},
+const itemsComponentsScheme = [
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'NoMaterial', type: new TBoolean },
 ]
 
-const containersSpritesScheme=[
-    {name:'SpriteID', type:new TSpriteId},
-    {name:'Offset', type:new TString},
-    {name:'Type', type:new TString},
-    {name:'MaterialItem', type:new TNumber},
+const itemGroupingGroupsScheme = [
+    { name: 'GroupID', type: new TString },
+    { name: 'Items', type: new TArrayOf(new TTableRef('Items')) },
 ]
 
-const containerComponentsScheme=[
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'Type', type:new TString},
+const containersSpritesScheme = [
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'Offset', type: new TString },
+    { name: 'Type', type: new TString },
+    { name: 'MaterialItem', type: new TNumber },
 ]
 
-const containerTestTileScheme=[
-    {name:'Offset', type:new TString},
-    {name:'Construction', type:new TBoolean},
-    {name:'Stockpile', type:new TBoolean},
-    {name:'Job', type:new TBoolean},
+const containerComponentsScheme = [
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'Type', type: new TString },
 ]
 
-const gameStartComponentsScheme=[
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'MaterialID', type:new TTableRef('Materials')},
+const containerTestTileScheme = [
+    { name: 'Offset', type: new TString },
+    { name: 'Construction', type: new TBoolean },
+    { name: 'Stockpile', type: new TBoolean },
+    { name: 'Job', type: new TBoolean },
 ]
 
-const gameStartContentScheme=[
-    {name:'Type', type:new TString},
-    {name:'ItemID', type:new TTableRef('Items')},
-    {name:'MaterialID', type:new TTableRef('Materials')},
-    {name:'Amount', type:new TNumber},
+const gameStartComponentsScheme = [
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'MaterialID', type: new TTableRef('Materials') },
 ]
 
-export const dbScheme : {[key:string]:Array<FieldDef>}={
-    Attributes:[
-        {name:'ID', type:new TString},
+const gameStartContentScheme = [
+    { name: 'Type', type: new TString },
+    { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'MaterialID', type: new TTableRef('Materials') },
+    { name: 'Amount', type: new TNumber },
+]
+
+export const dbScheme: { [key: string]: FieldDef[] } = {
+    Attributes: [
+        { name: 'ID', type: new TString },
     ],
-    Skills:[
-        {name:'ID', type:new TString},
-        {name:'RequiredToolItemID',type:new TTableRef('Items')}
+    Skills: [
+        { name: 'ID', type: new TString },
+        { name: 'RequiredToolItemID', type: new TTableRef('Items') }
     ],
-    SkillGroups:[
-        {name:'ID', type:new TString},
-        {name:'Text', type:new TString},
-        {name:'Position', type:new TNumber},
-        {name:'Color', type:new TColor},
-        {name:'SkillID', type:new TArrayOf(new TTableRef('Skills'))}
+    SkillGroups: [
+        { name: 'ID', type: new TString },
+        { name: 'Text', type: new TString },
+        { name: 'Position', type: new TNumber },
+        { name: 'Color', type: new TColor },
+        { name: 'SkillID', type: new TArrayOf(new TTableRef('Skills')) }
     ],
-    Needs:[
-        {name:'ID', type:new TString},
-        {name:'Max', type:new TNumber},
-        {name:'BarColor', type:new TColor},
-        {name:'DecayPerMinute', type:new TNumber},
-        {name:'GainFromSleep', type:new TNumber},
-        {name:'States', type:new TNested(needsStatesScheme)}
+    Needs: [
+        { name: 'ID', type: new TString },
+        { name: 'Max', type: new TNumber },
+        { name: 'BarColor', type: new TColor },
+        { name: 'DecayPerMinute', type: new TNumber },
+        { name: 'GainFromSleep', type: new TNumber },
+        { name: 'States', type: new TNested(needsStatesScheme) }
     ],
-    Names:[
-        {name:'ID', type:new TString},
-        {name:'Names', type:new TArrayOf(new TString)},
+    Names: [
+        { name: 'ID', type: new TString },
+        { name: 'Names', type: new TArrayOf(new TString) },
     ],
-    Animals:[
-        {name:'ID', type:new TString},
-        {name:'AllowInWild', type:new TBoolean},
-        {name:'SpriteID', type:new TSpriteId},
-        {name:'Behavior', type:new TString},
-        {name:'Speed', type:new TNumber},
-        {name:'HungerPerTick', type:new TNumber},
-        {name:'EatTime', type:new TNumber},
+    Animals: [
+        { name: 'ID', type: new TString },
+        { name: 'AllowInWild', type: new TBoolean },
+        { name: 'SpriteID', type: new TSpriteID },
+        { name: 'Behavior', type: new TString },
+        { name: 'Speed', type: new TNumber },
+        { name: 'HungerPerTick', type: new TNumber },
+        { name: 'EatTime', type: new TNumber },
     ],
-    Plants:[
-        {name:'ID', type:new TString},
-        {name:'Material', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'AllowInWild', type:new TBoolean},
-        {name:'States', type:new TNested(plantsStatesScheme)},
-        {name:'OnHarvest', type:new TNested(plantsOnHarvestScheme)},
-        {name:'SeedItemID', type:new TString},
-        {name:'GrowTimeMin', type:new TNumber},
-        {name:'GrowTimeMax', type:new TNumber},
-        {name:'LosesFruitInSeason', type:new TString},
-        {name:'GrowsInSeason', type:new TArrayOf(new TString)},
-        {name:'GrowsIn', type:new TString},
-        {name:'IsKilledInSeason', type:new TTableRef('Seasons')},
-        {name:'ToolButtonSprite', type:new TString},
-        {name:'OnFell', type:new TNested(plantsOnFell)},
-        {name:'FruitItemID', type: new TTableRef('Items')},
-        {name:'NumFruitsPerSeason', type:new TNumber},
+    Plants: [
+        { name: 'ID', type: new TString },
+        { name: 'Material', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'AllowInWild', type: new TBoolean },
+        { name: 'States', type: new TNested(plantsStatesScheme) },
+        { name: 'OnHarvest', type: new TNested(plantsOnHarvestScheme) },
+        { name: 'SeedItemID', type: new TString },
+        { name: 'GrowTimeMin', type: new TNumber },
+        { name: 'GrowTimeMax', type: new TNumber },
+        { name: 'LosesFruitInSeason', type: new TString },
+        { name: 'GrowsInSeason', type: new TArrayOf(new TString) },
+        { name: 'GrowsIn', type: new TString },
+        { name: 'IsKilledInSeason', type: new TTableRef('Seasons') },
+        { name: 'ToolButtonSprite', type: new TString },
+        { name: 'OnFell', type: new TNested(plantsOnFell) },
+        { name: 'FruitItemID', type: new TTableRef('Items') },
+        { name: 'NumFruitsPerSeason', type: new TNumber },
     ],
-    TreeLayouts:[
-        {name:'ID', type:new TString},
-        {name:'Layout', type:new TNested(treeLayoutScheme)},
+    TreeLayouts: [
+        { name: 'ID', type: new TString },
+        { name: 'Layout', type: new TNested(treeLayoutScheme) },
     ],
-    Actions:[
-        {name:'ID', type:new TString},
-        {name:'Job', type:new TString},
-        {name:'ConstructionType', type:new TString},
-        {name:'Multi', type:new TBoolean},
-        {name:'Rotate', type:new TBoolean},
-        {name:'Floor', type:new TBoolean},
-        {name:'SpriteID', type:new TOneOf([{detector:stringDetector,def:new TSpriteId},{def:new TNested(actionSpriteIdScheme)}])},
-        {name:'TestTile', type:new TNested(actionTestTileScheme)},
-        {name:'ConstructionSelect', type:new TBoolean}
+    Actions: [
+        { name: 'ID', type: new TString },
+        { name: 'Job', type: new TString },
+        { name: 'ConstructionType', type: new TString },
+        { name: 'Multi', type: new TBoolean },
+        { name: 'Rotate', type: new TBoolean },
+        { name: 'Floor', type: new TBoolean },
+        { name: 'SpriteID', type: new TOneOf([{ detector: stringDetector, def: new TSpriteID }, { def: new TNested(actionSpriteIdScheme) }]) },
+        { name: 'TestTile', type: new TNested(actionTestTileScheme) },
+        { name: 'ConstructionSelect', type: new TBoolean }
     ],
-    Constructions:[
-        {name:'ID', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'Sprites', type:new TNested(constructionsSpritesScheme)},
-        {name:'Rotation', type:new TBoolean},
-        {name:'Components', type:new TNested(constructionComponentsScheme)},
-        {name:'IntermediateSprites', type:new TNested(constructionsIntermediateSpritesScheme)},
+    Constructions: [
+        { name: 'ID', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'Sprites', type: new TNested(constructionsSpritesScheme) },
+        { name: 'Rotation', type: new TBoolean },
+        { name: 'Components', type: new TNested(constructionComponentsScheme) },
+        { name: 'IntermediateSprites', type: new TNested(constructionsIntermediateSpritesScheme) },
     ],
-    ConstructionTypes:[
-        {name:'ID', type:new TString},
+    ConstructionTypes: [
+        { name: 'ID', type: new TString },
     ],
-    Crafts:[
-        {name:'ID', type:new TString},
-        {name:'ItemID', type:new TTableRef('Items')},
-        {name:'SkillID', type:new TTableRef('Skills')},
-        {name:'ProductionTime', type:new TNumber},
-        {name:'AttributeUsed', type:new TOneOf([{detector:stringDetector,def:new TString}, {def:new TArrayOf(new TString)}])},
-        {name:'ConversionMaterial', type:new TString},
-        {name:'Components', type:new TNested(craftsComponentsScheme)},
-        {name:'TechGain', type:new TNested(craftsTechGainScheme)},
-        {name:'SkillGain', type:new TNested(craftsSkillGainScheme)},
-        {name:'Prereqs', type:new TNested(craftsPrereqsScheme)},
-        {name:'Amount', type:new TNumber},
-        {name:'BlueprintID', type:new TString},
-        {name:'MaterialItems', type:new TArrayOf(new TNumber)},
-        {name:'AllowedMaterialType', type: new TArrayOf(new TString)},
-        {name:'AllowedMaterial', type: new TArrayOf(new TString)},
+    Crafts: [
+        { name: 'ID', type: new TString },
+        { name: 'ItemID', type: new TTableRef('Items') },
+        { name: 'SkillID', type: new TTableRef('Skills') },
+        { name: 'ProductionTime', type: new TNumber },
+        { name: 'AttributeUsed', type: new TOneOf([{ detector: stringDetector, def: new TString }, { def: new TArrayOf(new TString) }]) },
+        { name: 'ConversionMaterial', type: new TString },
+        { name: 'Components', type: new TNested(craftsComponentsScheme) },
+        { name: 'TechGain', type: new TNested(craftsTechGainScheme) },
+        { name: 'SkillGain', type: new TNested(craftsSkillGainScheme) },
+        { name: 'Prereqs', type: new TNested(craftsPrereqsScheme) },
+        { name: 'Amount', type: new TNumber },
+        { name: 'BlueprintID', type: new TString },
+        { name: 'MaterialItems', type: new TArrayOf(new TNumber) },
+        { name: 'AllowedMaterialType', type: new TArrayOf(new TString) },
+        { name: 'AllowedMaterial', type: new TArrayOf(new TString) },
     ],
-    Jobs:[
-        {name:'ID', type:new TString},
-        {name:'SkillID', type:new TTableRef('Skills')},
-        {name:'WorkPosition', type:new TArrayOf(new TArrayOf(new TNumber))},
-        {name:'Tasks', type:new TNested(jobsTasksScheme)},
-        {name:'RequiredToolItemID', type:new TTableRef('Items')},
-        {name:'RequiredToolLevel', type:new TString},
-        {name:'Ticks', type:new TNumber},
-        {name:'SpriteID', type:new TNested(jobsSpriteIdScheme)},
-        {name:'SkillGain', type:new TString},
-        {name:'TechGain', type:new TString},
-        {name:'ConstructionType', type:new TString},
-        {name:'Staging', type:new TArrayOf(new TArrayOf(new TNumber))},
+    Jobs: [
+        { name: 'ID', type: new TString },
+        { name: 'SkillID', type: new TTableRef('Skills') },
+        { name: 'WorkPosition', type: new TArrayOf(new TArrayOf(new TNumber)) },
+        { name: 'Tasks', type: new TNested(jobsTasksScheme) },
+        { name: 'RequiredToolItemID', type: new TTableRef('Items') },
+        { name: 'RequiredToolLevel', type: new TString },
+        { name: 'Ticks', type: new TNumber },
+        { name: 'SpriteID', type: new TNested(jobsSpriteIdScheme) },
+        { name: 'SkillGain', type: new TString },
+        { name: 'TechGain', type: new TString },
+        { name: 'ConstructionType', type: new TString },
+        { name: 'Staging', type: new TArrayOf(new TArrayOf(new TNumber)) },
     ],
-    Workshops:[
-        {name:'ID', type:new TString},
-        {name:'Size', type:new TString},
-        {name:'InputTile', type:new TString},
-        {name:'OutputTile', type:new TString},
-        {name:'Crafts', type:new TArrayOf(new TTableRef('Items'))},
-        {name:'Components', type:new TNested(workshopsComponentsScheme)},
-        {name:'TestTile', type:new TNested(workshopsTestTileScheme)},
-        {name:'SpecialGui', type:new TString}
+    Workshops: [
+        { name: 'ID', type: new TString },
+        { name: 'Size', type: new TString },
+        { name: 'InputTile', type: new TString },
+        { name: 'OutputTile', type: new TString },
+        { name: 'Crafts', type: new TArrayOf(new TTableRef('Items')) },
+        { name: 'Components', type: new TNested(workshopsComponentsScheme) },
+        { name: 'TestTile', type: new TNested(workshopsTestTileScheme) },
+        { name: 'SpecialGui', type: new TString }
     ],
-    Items:[
-        {name:'ID', type:new TString},
-        {name:'Value', type:new TNumber},
-        {name:'HasQuality', type:new TBoolean},
-        {name:'SpriteID', type:new TSpriteId},
-        {name:'StackSize', type:new TNumber},
-        {name:'LightIntensity', type:new TNumber},
-        {name:'DrinkValue', type:new TNumber},
-        {name:'Components', type:new TNested(itemsComponentsScheme)},
-        {name:'IsContainer', type:new TBoolean},
-        {name:'IsTool', type:new TBoolean},
-        {name:'Nutrition', type: new TNumber}
+    Items: [
+        { name: 'ID', type: new TString },
+        { name: 'Value', type: new TNumber },
+        { name: 'HasQuality', type: new TBoolean },
+        { name: 'SpriteID', type: new TSpriteID },
+        { name: 'StackSize', type: new TNumber },
+        { name: 'LightIntensity', type: new TNumber },
+        { name: 'DrinkValue', type: new TNumber },
+        { name: 'Components', type: new TNested(itemsComponentsScheme) },
+        { name: 'IsContainer', type: new TBoolean },
+        { name: 'IsTool', type: new TBoolean },
+        { name: 'Nutrition', type: new TNumber }
     ],
-    Furniture:[
-        {name:'ID', type:new TString},
+    Furniture: [
+        { name: 'ID', type: new TString },
     ],
-    Doors:[
-        {name:'ID', type:new TString},
+    Doors: [
+        { name: 'ID', type: new TString },
     ],
-    ItemGrouping:[
-        {name:'ID', type:new TString},
-        {name:'Color', type:new TColor},
-        {name:'ClassID', type:new TString},
-        {name:'Groups', type:new TNested(itemGroupingGroupsScheme)},
+    ItemGrouping: [
+        { name: 'ID', type: new TString },
+        { name: 'Color', type: new TColor },
+        { name: 'ClassID', type: new TString },
+        { name: 'Groups', type: new TNested(itemGroupingGroupsScheme) },
     ],
-    Materials:[
-        {name:'ID', type:new TString},
-        {name:'Name', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'Color', type:new TColor},
-        {name:'Value', type:new TNumber},
-        {name:'Strength', type:new TNumber},
-        {name:'GroupName', type:new TString}
+    Materials: [
+        { name: 'ID', type: new TString },
+        { name: 'Name', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'Color', type: new TColor },
+        { name: 'Value', type: new TNumber },
+        { name: 'Strength', type: new TNumber },
+        { name: 'GroupName', type: new TString }
     ],
-    TerrainMaterials:[
-        {name:'ID', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'Highest', type:new TNumber},
-        {name:'Lowest', type:new TNumber},
-        {name:'RequiredToolLevel', type:new TNumber},
-        {name:'WallSprite', type:new TSpriteId},
-        {name:'FloorSprite', type:new TSpriteId},
-        {name:'ShortWallSprite', type:new TSpriteId},
+    TerrainMaterials: [
+        { name: 'ID', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'Highest', type: new TNumber },
+        { name: 'Lowest', type: new TNumber },
+        { name: 'RequiredToolLevel', type: new TNumber },
+        { name: 'WallSprite', type: new TSpriteID },
+        { name: 'FloorSprite', type: new TSpriteID },
+        { name: 'ShortWallSprite', type: new TSpriteID },
     ],
-    EmbeddedMaterials:[
-        {name:'ID', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'Highest', type:new TNumber},
-        {name:'Lowest', type:new TNumber},
-        {name:'WallSprite', type:new TSpriteId},
-        {name:'RequiredToolLevel', type:new TNumber},
+    EmbeddedMaterials: [
+        { name: 'ID', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'Highest', type: new TNumber },
+        { name: 'Lowest', type: new TNumber },
+        { name: 'WallSprite', type: new TSpriteID },
+        { name: 'RequiredToolLevel', type: new TNumber },
     ],
-    MaterialToToolLevel:[
-        {name:'ID', type:new TString},
-        {name:'RequiredToolLevel', type:new TNumber},
-        {name:'ToolLevel', type:new TNumber},
+    MaterialToToolLevel: [
+        { name: 'ID', type: new TString },
+        { name: 'RequiredToolLevel', type: new TNumber },
+        { name: 'ToolLevel', type: new TNumber },
     ],
-    Containers:[
-        {name:'ID', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'Buildable', type:new TBoolean},
-        {name:'Capacity', type:new TNumber},
-        {name:'RequireSame', type:new TBoolean},
-        {name:'Sprites', type:new TNested(containersSpritesScheme)},
-        {name:'Components', type:new TNested(containerComponentsScheme)},
-        {name:'TestTile', type:new TNested(containerTestTileScheme)},
-        {name:'AllowedItems', type:new TArrayOf(new TTableRef('Items'))},
+    Containers: [
+        { name: 'ID', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'Buildable', type: new TBoolean },
+        { name: 'Capacity', type: new TNumber },
+        { name: 'RequireSame', type: new TBoolean },
+        { name: 'Sprites', type: new TNested(containersSpritesScheme) },
+        { name: 'Components', type: new TNested(containerComponentsScheme) },
+        { name: 'TestTile', type: new TNested(containerTestTileScheme) },
+        { name: 'AllowedItems', type: new TArrayOf(new TTableRef('Items')) },
     ],
-    Gamestart:[
-        {name:'Offset', type:new TString},
-        {name:'Type', type:new TString},
-        {name:'ItemID', type:new TTableRef('Items')},
-        {name:'Components', type:new TNested(gameStartComponentsScheme)},
-        {name:'MaterialID', type:new TTableRef('Materials')},
-        {name:'Amount', type:new TNumber},
-        {name:'Content', type:new TNested(gameStartContentScheme)},
-        {name:'Color', type:new TColor},
+    Gamestart: [
+        { name: 'Offset', type: new TString },
+        { name: 'Type', type: new TString },
+        { name: 'ItemID', type: new TTableRef('Items') },
+        { name: 'Components', type: new TNested(gameStartComponentsScheme) },
+        { name: 'MaterialID', type: new TTableRef('Materials') },
+        { name: 'Amount', type: new TNumber },
+        { name: 'Content', type: new TNested(gameStartContentScheme) },
+        { name: 'Color', type: new TColor },
     ],
-    Tech:[
-        {name:'ID', type:new TString},
+    Tech: [
+        { name: 'ID', type: new TString },
     ],
-    Seasons:[
-        {name:'ID', type:new TString},
-        {name:'NextSeason', type:new TTableRef('Seasons')},
-        {name:'NumDays', type:new TNumber},
-        {name:'SunRiseFirst', type:new TString},
-        {name:'SunsetFirst', type:new TString},
+    Seasons: [
+        { name: 'ID', type: new TString },
+        { name: 'NextSeason', type: new TTableRef('Seasons') },
+        { name: 'NumDays', type: new TNumber },
+        { name: 'SunRiseFirst', type: new TString },
+        { name: 'SunsetFirst', type: new TString },
     ],
-    Time:[
-        {name:'ID', type:new TString},
-        {name:'Value', type:new TNumber},
+    Time: [
+        { name: 'ID', type: new TString },
+        { name: 'Value', type: new TNumber },
     ],
 }

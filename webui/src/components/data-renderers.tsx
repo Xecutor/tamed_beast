@@ -3,7 +3,7 @@ import {Label} from 'semantic-ui-react'
 
 import {FieldDef, TypeDef} from '../database/scheme'
 import {TableView} from './table-view'
-import {getBaseSprite} from '../utils/sprites-loader'
+import {getSprite} from '../utils/sprites-loader'
 
 interface StringRendererProps {
     value:string
@@ -54,7 +54,7 @@ interface NestedTableRendererProps{
 
 export class NestedTableRenderer extends React.Component<NestedTableRendererProps,any> {
     render() {
-        console.log('nestedtable',this.props.table)
+        //console.log('nestedtable',this.props.table)
         return <TableView collapsable={true} initiallyCollapsed={true} table={this.props.table} tableDef={this.props.typeDef}/>
     }
 }
@@ -65,12 +65,12 @@ interface SpriteRendererProps{
 
 export class SpriteRenderer extends React.Component<SpriteRendererProps,any> {
     render() {
-        let sprite = getBaseSprite(this.props.id)
-        if(sprite!==undefined) {
-            return <Label image={true}><img src={sprite.img.src}/>{this.props.id}</Label>
+        let sprite = getSprite(this.props.id)
+        if(sprite && sprite.img) {
+            return <Label image><img src={sprite.img.src}/>{this.props.id}</Label>
         }
         else {
-            return <Label icon='question'>{this.props.id}</Label>
+            return <Label icon='question' content={this.props.id}/>
         }
     }
 }

@@ -292,11 +292,11 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
         let middleColumn;
         if(this.state.mode==BaseSpriteMode.view) {
             middleColumn=[
-                <Segment>
+                <Segment key='buttons'>
                     <Button disabled={this.state.selectedId.length==0} onClick={()=>this.switchToEditMode()}>Edit</Button>
                     <Button onClick={()=>this.switchToInsertMode()}>Insert</Button>
                 </Segment>,
-                <Segment>
+                <Segment key='def'>
                 ID:{id}<br/>
                 Def file:{defFile}<br/>
                 Img file:{spriteFile}<br/>
@@ -307,7 +307,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
         else {
             let filesOptions=this.makeFileListOptions(this.state.editDef)
             middleColumn=[
-                <Segment>
+                <Segment key='edit'>
                     ID:{
                         this.state.mode==BaseSpriteMode.edit?id:<Input onChange={(e,{value})=>this.onEditIdChange(value)}value={id}/>
                     }<br/>
@@ -318,7 +318,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                     Img file:{spriteFile}<br/>
                     Rect:<br/>
                     <Grid verticalAlign='middle'>
-                        <Grid.Row>
+                        <Grid.Row key='x'>
                             <Grid.Column>
                                 X:
                             </Grid.Column>
@@ -326,7 +326,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                                 <Input type='number' onChange={(e, {value})=>this.onXChange(value)} value={rect.x}/><br/>
                             </Grid.Column>
                         </Grid.Row>
-                        <Grid.Row>
+                        <Grid.Row key='y'>
                             <Grid.Column>
                                 Y:
                             </Grid.Column>
@@ -334,7 +334,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                                 <Input type='number' onChange={(e, {value})=>this.onYChange(value)} value={rect.y}/><br/>
                             </Grid.Column>
                         </Grid.Row>
-                        <Grid.Row>
+                        <Grid.Row key='w'>
                             <Grid.Column>
                                 W:
                             </Grid.Column>
@@ -342,7 +342,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                                 <Input type='number' onChange={(e, {value})=>this.onWChange(value)} value={rect.w}/><br/>
                             </Grid.Column>
                         </Grid.Row>
-                        <Grid.Row>
+                        <Grid.Row key='h'>
                             <Grid.Column>
                                 H:
                             </Grid.Column>
@@ -352,7 +352,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                         </Grid.Row>
                     </Grid>
                 </Segment>,
-                <Segment>
+                <Segment key='buttons'>
                     <Button disabled={!this.canSave()} onClick={()=>this.saveChanges()}>Save</Button>
                     <Button onClick={()=>this.cancelEditMode()}>Cancel</Button>
                 </Segment>
@@ -383,11 +383,11 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                     </Grid.Column>
                     <Grid.Column floated={'left'}>
                         <Segment.Group compact>
-                            <Segment>
+                            <Segment key='controls'>
                                 <Button disabled={this.state.displayedImgDef.length==0} onClick={()=>this.markAssigned()}>Mark assigned</Button>
                                 <Dropdown disabled={this.state.mode!=BaseSpriteMode.view} options={this.makeFileListOptions(this.state.displayedImgDef)} onChange={(e,{value})=>this.changeTileSheet(value as string)}/>
                             </Segment>
-                            <Segment>
+                            <Segment key='cavas'>
                                 <canvas onClick={(evt)=>this.onCanvasClick(evt)} ref={(canvas=>this.storeCanvas(canvas))}/>
                             </Segment>
                         </Segment.Group>
