@@ -4,6 +4,7 @@ import { BaseSpriteRef, BaseSpriteRotation, CombineInfo, IntermediateSprite, Spr
 import { FilteredList } from './filtered-list';
 
 import {offsetToString} from '../utils/offset';
+import { caseInsensetiveFilter } from "../utils/string-util";
 
 
 interface SpritesTabState{
@@ -192,7 +193,7 @@ export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState
                         <FilteredList
                             inverted={this.state.inverted}
                             data={getSpriteList()} 
-                            filterItem={(id:string,flt:string)=>id.toUpperCase().indexOf(flt.toUpperCase())>=0}
+                            filterItem={caseInsensetiveFilter}
                             getItemImageURL={(id:string)=>getSpriteImgURL(id)}
                             getItemText={(id:string)=>id}
                             onClick={id=>this.onClick(id)}

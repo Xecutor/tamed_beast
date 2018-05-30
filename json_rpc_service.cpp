@@ -195,6 +195,7 @@ json_rpc_result json_rpc_service::get_db_list_method(const json_rpc_method_param
 json_rpc_result json_rpc_service::select_method(const json_rpc_method_params& params)
 {
     auto tablename = params.getString("table");
+    auto filter = params.getStringDefault("ID", nullptr);
     auto it = m_dbmap.find(tablename);
     if(it==m_dbmap.end()) {
         throw json_rpc_exception(json_rpc_error::table_not_found, tablename);
@@ -207,6 +208,9 @@ json_rpc_result json_rpc_service::select_method(const json_rpc_method_params& pa
         load_json_file(file, tbl);
         result.get_document().GetArray().Reserve(result.get_document().GetArray().Size() + tbl.GetArray().Size(), a);
         for(auto& item:tbl.GetArray()) {
+            if ( filter && item.GetObject().FindMember("ID")->value != filter ) {
+                continue;
+            }
             //rapidjson::Value itemCopy(item, result.get_document().GetAllocator());
             item.AddMember("_filename", file, result.get_document().GetAllocator());
             result.push_back(std::move(item));

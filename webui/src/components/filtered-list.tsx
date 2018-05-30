@@ -12,9 +12,10 @@ interface FilteredListProps<T>{
     data:Array<T>
     pageSize?:number
     inverted?:boolean
+    simple?:boolean
     filterItem:(val:T, filter:string)=>boolean
     onClick:(val:T)=>void
-    getItemImageURL:(val:T)=>string
+    getItemImageURL?:(val:T)=>string
     getItemText:(val:T)=>string
 }
 
@@ -59,8 +60,7 @@ export class FilteredList<T> extends React.Component<FilteredListProps<T>, Filte
 
         let paginator
         if(pages>1) {
-            paginator=<div>
-                <Pagination 
+            paginator=<Pagination 
                     inverted={this.props.inverted}
                     totalPages={pages}
                     activePage={page}
@@ -69,19 +69,33 @@ export class FilteredList<T> extends React.Component<FilteredListProps<T>, Filte
                     ellipsisItem={null}
                     boundaryRange={0}
                     pointing
-                    secondary                    onPageChange={(e,{activePage})=>this.onPageChange(activePage as number)}/>
-            </div>
+                    secondary
+                    onPageChange={(e,{activePage})=>this.onPageChange(activePage as number)}/>
         }
 
         let getImg=this.props.getItemImageURL
         let getTxt=this.props.getItemText
         let onClick=this.props.onClick
 
-        return <Segment inverted={this.props.inverted}>
-            <Input inverted={this.props.inverted} icon='search' value={this.state.filter} onChange={(e,{value})=>this.onFilterChange(value)}/><br/>
+        return <Segment basic={this.props.simple} inverted={this.props.inverted}>
+            <Input
+                inverted={this.props.inverted}
+                icon='search'
+                value={this.state.filter}
+                onChange={(e,{value})=>this.onFilterChange(value)}/>
+            <br/>
             {paginator}
-            <List inverted={this.props.inverted}>
-                {lst.map(val=><List.Item style={{minHeight:'32px'}} as='a' key={getTxt(val)} image={getImg(val)} content={getTxt(val)} onClick={()=>onClick(val)}/>)}
+            <List selection inverted={this.props.inverted}>
+                {
+                    lst.map(val=><List.Item 
+                                    style={{minHeight:'32px'}} 
+                                    as='a'
+                                    key={getTxt(val)}
+                                    image={getImg?getImg(val):undefined}
+                                    content={getTxt(val)}
+                                    onClick={()=>onClick(val)}/>
+                            )
+                }
             </List>
         </Segment>
     }

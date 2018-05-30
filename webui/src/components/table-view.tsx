@@ -96,6 +96,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         return <Modal 
             onOpen={()=>this.onModalOpen(getID(idx, row))}
             onClose={()=>this.onModalClosed(getID(idx, row))}
+            closeOnDimmerClick={false}
             open={this.state.isModalOpen[getID(idx, row)]}
             style={modalStyleFix} 
             trigger={<Icon name='edit' circular link/>}>
@@ -132,6 +133,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         return <Modal 
             onOpen={()=>this.onModalOpen(id)}
             onClose={()=>this.onModalClosed(id)}
+            closeOnDimmerClick={false}
             open={this.state.isModalOpen[id]}
             style={modalStyleFix} 
             trigger={<Icon size='tiny' circular link name='plus' inverted/>}>
@@ -196,7 +198,12 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                                     {this.renderEditModal(idx, row)}
                                 </Table.Cell>
                             }
-                            {names.map((n,idx)=><Table.Cell   key={`${getID(idx, row)}-${n}`} style={{wordWrap:'break-word'}}>{this.renderItem(row[n], this.props.tableDef ? this.props.tableDef[idx].type: undefined)}</Table.Cell>)}
+                            {
+                                names.map((n,idx)=>
+                                    <Table.Cell key={`${getID(idx, row)}-${n}`} style={{wordWrap:'break-word'}}>
+                                        {this.renderItem(row[n], this.props.tableDef ? this.props.tableDef[idx].type: undefined)}
+                                    </Table.Cell>)
+                            }
                         </Table.Row>
                     )
                     }

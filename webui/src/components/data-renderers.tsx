@@ -1,9 +1,11 @@
 import * as React from "react";
-import {Label} from 'semantic-ui-react'
+import {Label, Popup} from 'semantic-ui-react'
 
-import {FieldDef, TypeDef} from '../database/scheme'
+import {FieldDef, TypeDef, dbScheme} from '../database/scheme'
 import {TableView} from './table-view'
 import {getSprite} from '../utils/sprites-loader'
+import { parseColor } from "../utils/color";
+import { jsonrpcCall } from "../utils/jsonrpc";
 
 interface StringRendererProps {
     value:string
@@ -20,9 +22,38 @@ interface TableRefRendererProps{
     id:string
 }
 
-export class TableRefRenderer extends React.Component<TableRefRendererProps,any> {
+interface TableRefRendererState{
+    record:any[]
+}
+
+export class TableRefRenderer extends React.Component<TableRefRendererProps,TableRefRendererState> {
+    constructor(props:TableRefRendererProps) {
+        super(props)
+        this.state={
+            record:[]
+        }
+    }
+    onPopupOpen() {
+        jsonrpcCall('select', {table:this.props.table, ID:this.props.id}).then((record:any)=>{
+            this.setState({record})
+        })
+    }
     render() {
-        return <Label>{this.props.table} - {this.props.id}</Label>
+        let trigger = <Label as='a'>{this.props.table} - {this.props.id}</Label>
+        return <Popup
+            trigger={trigger}
+            hoverable
+            basic
+            flowing
+            onOpen={()=>this.onPopupOpen()}
+            hideOnScroll={false}
+            on='click'
+            position='bottom center'>
+            <Popup.Content>
+                <TableView table={this.state.record} tableDef={dbScheme[this.props.table]}/>
+            </Popup.Content>
+        </Popup>
+
     }
 }
 
@@ -32,11 +63,7 @@ interface ColorRendererProps{
 
 export class ColorRenderer extends React.Component<ColorRendererProps,any> {
     render() {
-        let clr=this.props.value;
-        if (clr.substr(0, 1) != '#') {
-            let [r, g, b, a] = this.props.value.split(' ').map(v => parseInt(v))
-            clr = `rgba(${r}, ${g}, ${b}, ${a})`
-        }
+        let clr = parseColor(this.props.value)
         let style={
             width:'16px',
             height:'16px',

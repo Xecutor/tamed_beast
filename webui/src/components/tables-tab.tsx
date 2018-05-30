@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import {Dropdown, Table} from 'semantic-ui-react'
+import {Dropdown, Loader, Segment} from 'semantic-ui-react'
 import { jsonrpcCall } from "../utils/jsonrpc";
 import {dbScheme} from '../database/scheme'
 import { TableView } from "./table-view";
@@ -10,6 +10,7 @@ import { METHODS } from "http";
 interface TablesTabState{
     table:Array<any>
     tableName:string
+    loading:boolean
 }
 
 interface TablesTabProps{
@@ -21,12 +22,14 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         super(props)
         this.state={
             table:[],
-            tableName:''
+            tableName:'',
+            loading:false
         }
     }
 
     onTableChange(tableName:string) {
-        jsonrpcCall('select', {table:tableName}).then(table=>this.setState({tableName, table}))
+        this.setState({loading:true})
+        jsonrpcCall('select', {table:tableName}).then(table=>this.setState({loading:false, tableName, table}))
     }
 
     onTableUpdate(idx:number, updatedRecord:any) {
@@ -50,9 +53,30 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
                 value: table
             })
         }
-        return <div>
-            Table:<Dropdown search selection text={this.state.tableName} onChange={(e,{value})=>this.onTableChange(value as string)} options={tableList}/><br/>
-            <TableView editMode onUpdate={(idx:number, rec:any)=>this.onTableUpdate(idx, rec)} table={this.state.table} tableDef={dbScheme[this.state.tableName]}/>
-        </div>
+        let mainComponent
+        if(this.state.loading) {
+            mainComponent = <Loader/>
+        }
+        else {
+            mainComponent = <TableView 
+                                editMode
+                                onUpdate={(idx:number, rec:any)=>this.onTableUpdate(idx, rec)} 
+                                table={this.state.table} 
+                                tableDef={dbScheme[this.state.tableName]}/>
+        }
+
+        return <Segment.Group>
+            <Segment vertical>
+                Table:<Dropdown 
+                        search
+                        selection
+                        text={this.state.tableName}
+                        onChange={(e,{value})=>this.onTableChange(value as string)} 
+                        options={tableList}/><br/>
+            </Segment>
+            <Segment vertical>
+                {mainComponent}
+            </Segment>
+        </Segment.Group>
     }
 }
