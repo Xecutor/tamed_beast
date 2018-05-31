@@ -1,9 +1,9 @@
 import * as React from "react";
 
-import {Form, Popup, Label, Icon} from 'semantic-ui-react'
+import {Form, Popup, Label, Icon, Segment, Grid} from 'semantic-ui-react'
 import { SketchPicker } from 'react-color'
 import { TableView } from "./table-view";
-import { FieldDef } from "../database/scheme";
+import { FieldDef, TypeDef } from "../database/scheme";
 import { getSprite, getSpriteImgURL, getSpriteList } from "../utils/sprites-loader";
 import { parseColor, colorToString, isHexColor } from "../utils/color";
 import { FilteredList } from "./filtered-list";
@@ -22,30 +22,72 @@ export class StringEditor extends React.Component<EditorProps<string>,any> {
     }
 }
 
+interface StringChoiceEditorProps extends EditorProps<string> {
+    values:string[]
+}
+
+export class StringChoiceEditor extends React.Component<StringChoiceEditorProps,any> {
+    render() {
+        let options = this.props.values.map(value=>{return {
+            key:value,
+            text:value,
+            value:value,
+            seleced:value==this.props.value
+        }})
+        return <Form.Select
+             key={this.props.name} 
+             label={this.props.name} 
+             value={this.props.value} 
+             options={options} onChange={(e,{value})=>this.props.onChange(value as string)}/>
+    }
+}
+
 export class NumberEditor extends React.Component<EditorProps<number>,any> {
     render() {
         return <Form.Input key={this.props.name} label={this.props.name}value={this.props.value} onChange={(e,{value})=>this.props.onChange(parseInt(value))}/>
     }
 }
 
-export class ColorEditor extends React.Component<EditorProps<string>,any> {
+interface ColorEditorProps extends EditorProps<string>{
+    hexColor:boolean
+}
+
+export class ColorEditor extends React.Component<ColorEditorProps,any> {
     render() {
         let clr = parseColor(this.props.value)
+        console.log(clr)
         let style={
             width:'16px',
             height:'16px',
             display: 'inline-block',
             backgroundColor:clr
         }
+        let trigger = <span>
+            {
+                clr.length==0?
+                    <Icon name='edit'/>
+                :[
+                    <span style={style}>&nbsp;</span>,
+                    this.props.value,
+                    <Icon name='delete' link circular color='red' onClick={()=>this.props.onChange(undefined)}/>
+                ]
+            }
+        </span>
         return <Form.Field key={this.props.name}>
                 <label>{this.props.name}</label>
                 <Popup
                     hoverable
                     flowing
                     on='click'
-                    trigger={<span><span style={style}>&nbsp;</span>{this.props.value}</span>}
+                    trigger={trigger}
                     position='right center'
-                    content={<SketchPicker disableAlpha={isHexColor(clr)} color={clr} onChangeComplete={val=>this.props.onChange(colorToString(this.props.value,val))}/>}
+                    content={
+                        <SketchPicker 
+                            disableAlpha={this.props.hexColor}
+                            color={clr}
+                            onChangeComplete={val=>this.props.onChange(colorToString(this.props.hexColor,val))}
+                        />
+                    }
                 />
             </Form.Field>
     }
@@ -119,11 +161,8 @@ export class SpriteIDEditor extends React.Component<EditorProps<string>,any> {
     }
 }
 
-interface TableRefEditorProps {
-    name:string
-    value:string
+interface TableRefEditorProps extends EditorProps<string> {
     tableName:string
-    onChange:(id:string)=>void
 }
 
 interface TableRefEditorState {
@@ -168,5 +207,52 @@ export class TableRefEditor extends React.Component<TableRefEditorProps, TableRe
                     />}
                 />
         </Form.Field>
+    }
+}
+
+interface ArrayEditorProps extends EditorProps<any[]> {
+    type:TypeDef
+}
+
+export class ArrayEditor extends React.Component<ArrayEditorProps, any> {
+    onItemChange(item:any, idx:number) {
+        let newValue = this.props.value ? [...this.props.value] : []
+        newValue[idx]=item
+        this.props.onChange(newValue)
+
+    }
+
+    onDeleteItem(idx:number) {
+        let newValue = [...this.props.value]
+        newValue.splice(idx, 1)
+        this.props.onChange(newValue)
+    }
+
+    onAddItem() {
+        let newValue = this.props.value ? [...this.props.value] : []
+        newValue.push(undefined)
+        console.log(newValue.length)
+        this.props.onChange(newValue)
+    }
+
+    render() {
+        let rv: any[] = []
+        if(this.props.value) {
+            rv = this.props.value.map((value,idx)=><Segment key={idx}><Grid columns={2}>
+                <Grid.Row>
+                    <Grid.Column width={10}>
+                        {this.props.type.renderEditor(undefined, value, (newValue)=>this.onItemChange(newValue, idx))}
+                    </Grid.Column>
+                    <Grid.Column floated='right' width={1}>
+                        <Icon floated='right' name="delete" link color='red' circular onClick={()=>this.onDeleteItem(idx)}/>
+                    </Grid.Column>
+                </Grid.Row>
+            </Grid></Segment>)
+        }
+        rv.push(<Segment key='add'><Icon name="plus" link circular onClick={()=>this.onAddItem()}/></Segment>)
+        return <Form.Field>
+                <label>{this.props.name}</label>
+                <Segment>{rv}</Segment>
+            </Form.Field>
     }
 }

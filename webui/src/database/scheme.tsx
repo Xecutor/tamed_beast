@@ -2,7 +2,8 @@ import * as React from "react";
 
 import { StringRenderer, TableRefRenderer, ColorRenderer, NestedTableRenderer, SpriteRenderer } from '../components/data-renderers'
 
-import { StringEditor, NumberEditor, BoolEditor, ColorEditor, NestedTableEditor, SpriteIDEditor, TableRefEditor } from '../components/data-editors'
+import { StringEditor, NumberEditor, BoolEditor, ColorEditor, NestedTableEditor, SpriteIDEditor, TableRefEditor, ArrayEditor, StringChoiceEditor } from '../components/data-editors'
+import { getSprite } from "../utils/sprites-loader";
 
 export interface TypeDef {
     renderValue(value: any): JSX.Element | JSX.Element[]
@@ -25,6 +26,22 @@ class TString implements TypeDef {
     }
     validate(value: any) {
         return typeof (value) === "string"
+    }
+    copy(value: string) {
+        return value
+    }
+}
+
+class TStringChoice implements TypeDef {
+    constructor(public values:string[]){}
+    renderValue(value: string) {
+        return <StringRenderer value={value} />
+    }
+    renderEditor(name: string, value: string, onChange: (newValue: string) => void) {
+        return <StringChoiceEditor key={name} name={name} value={value} values={this.values} onChange={onChange} />
+    }
+    validate(value: any) {
+        return typeof (value) === "string" && this.values.includes(value)
     }
     copy(value: string) {
         return value
@@ -63,11 +80,12 @@ class TNumber implements TypeDef {
 }
 
 class TColor implements TypeDef {
+    constructor(public isHex:boolean = false){}
     renderValue(value: string) {
         return <ColorRenderer value={value} />
     }
     renderEditor(name: string, value: string, onChange: (newValue: string) => void) {
-        return <ColorEditor key={name} name={name} value={value} onChange={onChange} />
+        return <ColorEditor hexColor={this.isHex} key={name} name={name} value={value} onChange={onChange} />
     }
     validate(value: any) {
         return typeof (value) === "string"
@@ -135,13 +153,13 @@ class TNestedObject implements TypeDef {
     constructor(public def: FieldDef[]) {
     }
     renderValue(value: any) {
-        return value ? <NestedTableRenderer table={[value]} typeDef={this.def} /> : <span></span>
+        return value ? <NestedTableRenderer table={value?[value]:[]} typeDef={this.def} /> : <span></span>
     }
     renderEditor(name: string, value: any, onChange: (newValue: any) => void) {
-        return <NestedTableEditor key={name} name={name} value={value} tableDef={this.def} onChange={onChange} />
+        return <NestedTableEditor key={name} name={name} value={value?[value]:[]} tableDef={this.def} onChange={newValue=>onChange(newValue[0])} />
     }
     validate(value: any) {
-        return validateScheme([value], this.def)
+        return validateScheme(value?[value]:[], this.def)
     }
     copy(value: any) {
         return copyRecord(value, this.def)
@@ -154,6 +172,9 @@ class TArrayOf implements TypeDef {
     }
     renderValue(value: any[]) {
         return value.map(item => this.itemType.renderValue(item) as JSX.Element)
+    }
+    renderEditor(name: string, value: any, onChange: (newValue: any) => void) {
+        return <ArrayEditor key={name} name={name} value={value} onChange={onChange} type={this.itemType}/>
     }
     validate(value: any) {
         return typeof (value) === "object" && value.length != undefined
@@ -227,6 +248,9 @@ class TCustomObject implements TypeDef {
 }
 
 export function copyRecord(record: any, defs: FieldDef[]) {
+    if (record === undefined) {
+        return record
+    }
     let rv: any = {}
     for (let def of defs) {
         if (record[def.name] !== undefined) {
@@ -240,20 +264,30 @@ export function copyTable(table:any[], defs:FieldDef[]) {
     if (table === undefined) {
         return table
     }
+    if (!table.map) {
+        console.log(table)
+    }
     return table.map((item:any)=>copyRecord(item, defs))
 }
 
 const stateModifierScheme = [
-    { name: 'Type', type: new TString },
-    { name: 'Attribute', type: new TString },
+    { name: 'Type', type: new TStringChoice(['Attribute', 'Need']) },
+    { name: 'Attribute', type: new TTableRef('Attributes') },
     { name: 'Value', type: new TNumber }
 ]
+
+function needsSpriteIDTransform(id:string) {
+    if (getSprite('Status' + id)) {
+        return 'Status' + id
+    }
+    return id
+}
 
 const needsStatesScheme = [
     { name: 'ID', type: new TString },
     { name: 'Threshold', type: new TNumber },
     { name: 'Priority', type: new TNumber },
-    { name: 'ThoughtBubble', type: new TSpriteID((id) => 'Status' + id) },
+    { name: 'ThoughtBubble', type: new TSpriteID(needsSpriteIDTransform) },
     { name: 'Modifiers', type: new TNestedTable(stateModifierScheme) },
     { name: 'Action', type: new TString }
 ]
@@ -453,7 +487,7 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
     Needs: [
         { name: 'ID', type: new TString },
         { name: 'Max', type: new TNumber },
-        { name: 'BarColor', type: new TColor },
+        { name: 'BarColor', type: new TColor(true) },
         { name: 'DecayPerMinute', type: new TNumber },
         { name: 'GainFromSleep', type: new TNumber },
         { name: 'States', type: new TNestedTable(needsStatesScheme) }

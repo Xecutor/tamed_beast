@@ -22,7 +22,7 @@ interface TableViewProps{
 }
 
 function getID(idx:number,item:any) {
-    if(item.ID) {
+    if(item && item.ID) {
         return item.ID
     }
     return idx.toString()
@@ -103,7 +103,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             <Modal.Header>
                 {getID(idx, row)}
             </Modal.Header>
-            <Modal.Content>
+            <Modal.Content scrolling>
                 {
                     this.state.isModalOpen[getID(idx, row)]?
                     <RecordEditForm inputRecord={row} tableDef={this.props.tableDef} onSave={(rec)=>this.onRecordSave(idx, rec)}/>
@@ -120,7 +120,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         let files : {[key:string]:boolean} = {}
         if(this.props.table) {
             for(let item of this.props.table) {
-                if(item._filename) {
+                if(item && item._filename) {
                     files[item._filename] = true
                 }
             }
@@ -140,7 +140,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             <Modal.Header>
                 New item
             </Modal.Header>
-            <Modal.Content>
+            <Modal.Content scrolling>
                 {
                     this.state.isModalOpen[id] &&
                     <RecordEditForm 
@@ -201,7 +201,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                             {
                                 names.map((n,idx)=>
                                     <Table.Cell key={`${getID(idx, row)}-${n}`} style={{wordWrap:'break-word'}}>
-                                        {this.renderItem(row[n], this.props.tableDef ? this.props.tableDef[idx].type: undefined)}
+                                        {this.renderItem(row?row[n]:undefined, this.props.tableDef ? this.props.tableDef[idx].type: undefined)}
                                     </Table.Cell>)
                             }
                         </Table.Row>
