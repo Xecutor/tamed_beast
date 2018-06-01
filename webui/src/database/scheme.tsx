@@ -382,7 +382,7 @@ const craftsTechGainScheme = [
 ]
 
 const craftsSkillGainScheme = [
-    { name: 'SkillID', type: new TTableRef('Skill') },
+    { name: 'SkillID', type: new TTableRef('Skills') },
     { name: 'Formula', type: new TString },
     { name: 'Args', type: new TCustomObject },
 ]
