@@ -62,17 +62,15 @@ export class ColorEditor extends React.Component<ColorEditorProps,any> {
             display: 'inline-block',
             backgroundColor:clr
         }
-        let trigger = <span>
-            {
-                clr.length==0?
-                    <Icon name='edit'/>
-                :[
-                    <span style={style}>&nbsp;</span>,
-                    this.props.value,
-                    <Icon name='delete' link circular color='red' onClick={()=>this.props.onChange(undefined)}/>
-                ]
-            }
-        </span>
+        let trigger
+        let delIcon
+        if(clr.length==0) {
+            trigger = <Icon name='edit'/>
+        }
+        else {
+            trigger = <span><span style={style}>&nbsp;</span>{this.props.value}</span>
+            delIcon = <Icon name='delete' link circular color='red' onClick={()=>this.props.onChange(undefined)}/>
+        }
         return <Form.Field key={this.props.name}>
                 <label>{this.props.name}</label>
                 <Popup
@@ -89,6 +87,9 @@ export class ColorEditor extends React.Component<ColorEditorProps,any> {
                         />
                     }
                 />
+                {
+                    delIcon
+                }
             </Form.Field>
     }
 }
@@ -113,14 +114,23 @@ interface NestedTableEditorProps {
 
 export class NestedTableEditor extends React.Component<NestedTableEditorProps,any> {
     onUpdate(idx:number, record:any) {
-        let updatedTable = [...this.props.value]
+        let updatedTable = this.props.value?[...this.props.value]:[]
         updatedTable[idx] = record
+        this.props.onChange(updatedTable)
+    }
+    onDelete(idx:number) {
+        let updatedTable = [...this.props.value]
+        updatedTable.splice(idx, 1)
         this.props.onChange(updatedTable)
     }
     render() {
         return <Form.Field key={this.props.name}>
             <label>{this.props.name}</label>
-            <TableView editMode onUpdate={(idx:number, record:any)=>this.onUpdate(idx, record)} table={this.props.value} tableDef={this.props.tableDef} />
+            <TableView editMode 
+                onUpdate={(idx:number, record:any)=>this.onUpdate(idx, record)} 
+                onDelete={idx=>this.onDelete(idx)}
+                table={this.props.value} 
+                tableDef={this.props.tableDef} />
         </Form.Field>
     }
 }
@@ -130,13 +140,15 @@ export class SpriteIDEditor extends React.Component<EditorProps<string>,any> {
         console.log(this.props.value)
         let imgSrc = getSpriteImgURL(this.props.value)
         let trigger
+        let delIcon
         if(imgSrc) {
             trigger = <span><img src={imgSrc}/>{this.props.value}</span>
+            delIcon = <Icon name='delete' link circular color='red' onClick={()=>this.props.onChange(undefined)}/>
         }
         else {
             trigger = <Icon name='image'/>
         }
-
+        
         return <Form.Field key={this.props.name}>
             <label>{this.props.name}</label>
             <Popup
@@ -157,6 +169,9 @@ export class SpriteIDEditor extends React.Component<EditorProps<string>,any> {
                     onClick={id=>this.props.onChange(id)}
                     />}
                 />
+            {
+                delIcon
+            }
         </Form.Field>
     }
 }
@@ -185,7 +200,16 @@ export class TableRefEditor extends React.Component<TableRefEditorProps, TableRe
     }
 
     render() {
-        let trigger = <Label as='a'>{this.props.tableName}:{this.props.value}</Label>
+        let trigger 
+        let delIcon
+        if(this.props.value) {
+            trigger = <Label as='a'>{this.props.tableName}:{this.props.value}</Label>
+            delIcon = <Icon name='delete' link circular color='red' onClick={()=>this.props.onChange(undefined)}/>
+        }
+        else {
+            trigger = <Label as='a'>{this.props.tableName}:{this.props.value}</Label>
+            
+        }
         return <Form.Field key={this.props.name}>
             <label>{this.props.name}</label>
             <Popup
@@ -206,20 +230,23 @@ export class TableRefEditor extends React.Component<TableRefEditorProps, TableRe
                     onClick={id=>this.props.onChange(id)}
                     />}
                 />
+                {
+                    delIcon
+                }
         </Form.Field>
     }
 }
 
 interface ArrayEditorProps extends EditorProps<any[]> {
     type:TypeDef
+    plainSingleItem?:boolean
 }
 
 export class ArrayEditor extends React.Component<ArrayEditorProps, any> {
     onItemChange(item:any, idx:number) {
         let newValue = this.props.value ? [...this.props.value] : []
         newValue[idx]=item
-        this.props.onChange(newValue)
-
+        this.props.onChange(this.props.plainSingleItem && newValue.length==1?newValue[0]:newValue)
     }
 
     onDeleteItem(idx:number) {
@@ -238,7 +265,8 @@ export class ArrayEditor extends React.Component<ArrayEditorProps, any> {
     render() {
         let rv: any[] = []
         if(this.props.value) {
-            rv = this.props.value.map((value,idx)=><Segment key={idx}><Grid columns={2}>
+            let value = this.props.plainSingleItem && !(this.props.value instanceof Array) ? [this.props.value] : this.props.value
+            rv = value.map((value,idx)=><Segment key={idx}><Grid columns={2}>
                 <Grid.Row>
                     <Grid.Column width={10}>
                         {this.props.type.renderEditor(undefined, value, (newValue)=>this.onItemChange(newValue, idx))}

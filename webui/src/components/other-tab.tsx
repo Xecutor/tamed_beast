@@ -13,6 +13,7 @@ interface OtherTabState{
 
 interface OtherTabProps{
     tableList:string[]
+    wsStatus:string
 }
 
 export class OtherTab extends React.Component<OtherTabProps, OtherTabState>{
@@ -59,6 +60,7 @@ export class OtherTab extends React.Component<OtherTabProps, OtherTabState>{
 
     render() {
         return <div>
+            <div>WS status:{this.props.wsStatus}</div>
             <Button onClick={()=>this.validate()}>Validate</Button><br/>
             <div>CurrentTable:{this.state.currentTable}</div>
             {

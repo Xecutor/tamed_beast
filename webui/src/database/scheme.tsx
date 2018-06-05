@@ -168,18 +168,27 @@ class TNestedObject implements TypeDef {
 
 
 class TArrayOf implements TypeDef {
-    constructor(public itemType: TypeDef) {
+    constructor(public itemType: TypeDef, public plainSingleItem:boolean = false) {
     }
     renderValue(value: any[]) {
+        if(this.plainSingleItem && !(value instanceof Array)) {
+            value = [value]
+        }
         return value.map(item => this.itemType.renderValue(item) as JSX.Element)
     }
     renderEditor(name: string, value: any, onChange: (newValue: any) => void) {
-        return <ArrayEditor key={name} name={name} value={value} onChange={onChange} type={this.itemType}/>
+        if(this.plainSingleItem && !(value instanceof Array)) {
+            value = [value]
+        }
+        return <ArrayEditor plainSingleItem={this.plainSingleItem} key={name} name={name} value={value} onChange={onChange} type={this.itemType}/>
     }
     validate(value: any) {
-        return typeof (value) === "object" && value.length != undefined
+        return (value instanceof Array) || (this.plainSingleItem && this.itemType.validate(value))
     }
     copy(value: any[]) {
+        if(this.plainSingleItem && !(value instanceof Array)) {
+            return this.itemType.copy(value)
+        }
         let rv: any[] = []
         for (let item of value) {
             rv.push(this.itemType.copy(item))
@@ -239,6 +248,16 @@ class TCustomObject implements TypeDef {
     renderValue(value: any) {
         return <StringRenderer value={JSON.stringify(value)} />
     }
+    onChange(onChange: (newValue: string) => void, newValue:string) {
+        onChange(JSON.parse(newValue))
+    }
+    renderEditor(name: string, value: any, onChange: (newValue: string) => void) {
+        return <StringEditor 
+            key={name}
+            name={name}
+            value={JSON.stringify(value)}
+            onChange={(val)=>this.onChange(onChange, val)} />
+    }
     validate(value: any) {
         return typeof (value) === "object"
     }
@@ -272,7 +291,7 @@ export function copyTable(table:any[], defs:FieldDef[]) {
 
 const stateModifierScheme = [
     { name: 'Type', type: new TStringChoice(['Attribute', 'Need']) },
-    { name: 'Attribute', type: new TTableRef('Attributes') },
+    { name: 'Attribute', type: new TString },
     { name: 'Value', type: new TNumber }
 ]
 
@@ -329,24 +348,30 @@ const actionSpriteIdScheme = [
     { name: 'type', type: new TString }, //???
 ]
 
+let testTileValues = [
+    'Floor', 
+    'FloorSoil', 
+    'Tree', 
+    'Plant', 
+    'PlantHasFruit', 
+    'Wall', 
+    'WallFree', 
+    'Construction', 
+    'Designation', 
+    'Job', 
+    'Ramp', 
+    'StairsTop', 
+    'Stairs', 
+    'TreeClip', 
+    'Stockpile', 
+    'Room',
+    'AnyWall'
+]
+
 const actionTestTileScheme = [
     { name: 'Offset', type: new TString },
-    { name: 'Floor', type: new TBoolean },
-    { name: 'FloorSoil', type: new TBoolean },
-    { name: 'Tree', type: new TBoolean },
-    { name: 'Plant', type: new TBoolean },
-    { name: 'PlantHasFruit', type: new TBoolean },
-    { name: 'Wall', type: new TBoolean },
-    { name: 'WallFree', type: new TBoolean },
-    { name: 'Construction', type: new TBoolean },
-    { name: 'Designation', type: new TBoolean },
-    { name: 'Job', type: new TBoolean },
-    { name: 'Ramp', type: new TBoolean },
-    { name: 'StairsTop', type: new TBoolean },
-    { name: 'Stairs', type: new TBoolean },
-    { name: 'TreeClip', type: new TBoolean },
-    { name: 'Stockpile', type: new TBoolean },
-    { name: 'Room', type: new TBoolean },
+    { name: 'Required', type: new TArrayOf(new TStringChoice(testTileValues))},
+    { name: 'Forbidden', type: new TArrayOf(new TStringChoice(testTileValues))}
 ]
 
 const constructionsSpritesScheme = [
@@ -357,6 +382,8 @@ const constructionsSpritesScheme = [
 
 const constructionComponentsScheme = [
     { name: 'ItemID', type: new TTableRef('Items') },
+    { name: 'Amount', type: new TNumber},
+    { name: 'MaterialTypes', type: new TArrayOf(new TString)}
 ]
 
 const constructionsIntermediateSpritesScheme = [
@@ -420,12 +447,14 @@ const workshopsComponentsScheme = [
     { name: 'ItemID', type: new TTableRef('Items') },
     { name: 'MaterialItem', type: new TArrayOf(new TNumber) },
     { name: 'WallRotation', type: new TString },
+    { name: 'Required', type: new TArrayOf(new TStringChoice(testTileValues)) },
+    { name: 'Forbidden', type: new TArrayOf(new TStringChoice(testTileValues)) },
 ]
 
 const workshopsTestTileScheme = [
     { name: 'Offset', type: new TString },
-    { name: 'Floor', type: new TBoolean },
-    { name: 'WallFree', type: new TBoolean },
+    { name: 'Required', type: new TArrayOf(new TStringChoice(testTileValues)) },
+    { name: 'Forbidden', type: new TArrayOf(new TStringChoice(testTileValues)) },
 ]
 
 const itemsComponentsScheme = [
@@ -515,8 +544,8 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'SeedItemID', type: new TString },
         { name: 'GrowTimeMin', type: new TNumber },
         { name: 'GrowTimeMax', type: new TNumber },
-        { name: 'LosesFruitInSeason', type: new TString },
-        { name: 'GrowsInSeason', type: new TArrayOf(new TString) },
+        { name: 'LosesFruitInSeason', type: new TTableRef('Seasons') },
+        { name: 'GrowsInSeason', type: new TArrayOf(new TTableRef('Seasons')) },
         { name: 'GrowsIn', type: new TString },
         { name: 'IsKilledInSeason', type: new TTableRef('Seasons') },
         { name: 'ToolButtonSprite', type: new TString },
@@ -533,6 +562,7 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'Job', type: new TString },
         { name: 'ConstructionType', type: new TString },
         { name: 'Multi', type: new TBoolean },
+        { name: 'MultiZ', type: new TBoolean },
         { name: 'Rotate', type: new TBoolean },
         { name: 'Floor', type: new TBoolean },
         { name: 'SpriteID', type: new TOneOf([{ detector: stringDetector, def: new TSpriteID }, { def: new TNestedTable(actionSpriteIdScheme) }]) },
@@ -555,7 +585,7 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'ItemID', type: new TTableRef('Items') },
         { name: 'SkillID', type: new TTableRef('Skills') },
         { name: 'ProductionTime', type: new TNumber },
-        { name: 'AttributeUsed', type: new TOneOf([{ detector: stringDetector, def: new TString }, { def: new TArrayOf(new TString) }]) },
+        { name: 'AttributeUsed', type: new TArrayOf(new TString, true) },
         { name: 'ConversionMaterial', type: new TString },
         { name: 'Components', type: new TNestedTable(craftsComponentsScheme) },
         { name: 'TechGain', type: new TNestedObject(craftsTechGainScheme) },
@@ -588,7 +618,6 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'OutputTile', type: new TString },
         { name: 'Crafts', type: new TArrayOf(new TTableRef('Items')) },
         { name: 'Components', type: new TNestedTable(workshopsComponentsScheme) },
-        { name: 'TestTile', type: new TNestedTable(workshopsTestTileScheme) },
         { name: 'SpecialGui', type: new TString }
     ],
     Items: [

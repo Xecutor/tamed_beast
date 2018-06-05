@@ -239,8 +239,10 @@ json_rpc_result json_rpc_service::update_method(const json_rpc_method_params& pa
     load_json_file(filename, doc);
     rapidjson::Value obj(params.getObject("object"), doc.GetAllocator());
 
+    auto& ID = obj["ID"];
+
     for(auto& item:doc.GetArray()) {
-        if ( item["ID"] == obj["ID"] ) {
+        if ( item["ID"] == ID ) {
             item = obj;
             break;
         }
@@ -253,5 +255,31 @@ json_rpc_result json_rpc_service::update_method(const json_rpc_method_params& pa
 
 json_rpc_result json_rpc_service::delete_method(const json_rpc_method_params& params)
 {
-    return {};
+    rapidjson::Document doc;
+    const std::string filename = params.getString("_filename");
+    load_json_file(filename, doc);
+
+    auto ID = params.getStringDefault("ID", nullptr);
+
+    int status = 0;
+
+    if(ID) {
+        for(auto it = doc.GetArray().begin(), end = doc.GetArray().end();it!=end;++it) {
+            auto& item = *it;
+            if ( item["ID"] == ID ) {
+                doc.GetArray().Erase(it);
+                status = 1;
+                break;
+            }
+        }
+    }
+    else {
+        int idx = params.getInt("idx");
+        doc.GetArray().Erase(doc.GetArray().begin() + idx);
+        status = 1;
+    }
+    store_json_file(filename, doc);
+    json_rpc_result res;
+    res.addMember("status", status);
+    return res;
 }

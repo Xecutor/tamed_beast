@@ -44,6 +44,13 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         )
     }
 
+    onDeleteItem(idx:number) {
+        let _filename = this.state.table[idx]._filename
+        let ID = this.state.table[idx].ID
+        console.log(`delete item ${ID}/${idx}`)
+        jsonrpcCall('delete', {table:this.state.tableName, ID, idx, _filename}).then(resp=>this.onTableChange(this.state.tableName))
+    }
+
     render() {
         let tableList = []
         for (let table of this.props.tableList) {
@@ -60,7 +67,8 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         else {
             mainComponent = <TableView 
                                 editMode
-                                onUpdate={(idx:number, rec:any)=>this.onTableUpdate(idx, rec)} 
+                                onUpdate={(idx:number, rec:any)=>this.onTableUpdate(idx, rec)}
+                                onDelete={(idx:number)=>this.onDeleteItem(idx)}
                                 table={this.state.table} 
                                 tableDef={dbScheme[this.state.tableName]}/>
         }

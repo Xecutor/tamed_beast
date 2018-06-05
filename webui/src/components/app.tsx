@@ -88,7 +88,7 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
                 },
                 {
                     menuItem: 'Other',
-                    pane: <Tab.Pane key='other'><OtherTab tableList={this.state.tableList}/></Tab.Pane>
+                    pane: <Tab.Pane key='other'><OtherTab wsStatus={this.state.wsStatus} tableList={this.state.tableList}/></Tab.Pane>
                 }
             ]
             mainComponent = <Tab renderActiveOnly={false} panes={panes}></Tab>
@@ -98,7 +98,6 @@ export class TamedBeastApp extends React.Component<any, TamedBeastAppState> impl
         }
 
         return <div>
-            <div>WS status:{this.state.wsStatus}</div>
             {mainComponent}
         </div>
     }
