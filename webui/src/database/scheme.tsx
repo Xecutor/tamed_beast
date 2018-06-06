@@ -214,33 +214,38 @@ class TSpriteID implements TypeDef {
     }
 }
 
-class TOneOf implements TypeDef {
-    constructor(public defs: { detector?: (value: any) => boolean, def: TypeDef }[]) {
-
+class TSpriteIDNestedTable implements TypeDef {
+    constructor(public def: FieldDef[]) {
     }
     renderValue(value: any) {
-        for (let td of this.defs) {
-            if (!td.detector || td.detector(value)) {
-                return td.def.renderValue(value)
+        if(typeof(value)==="string") {
+            value = [{SpriteID:value}]
+        }
+        return value ? <NestedTableRenderer table={value} typeDef={this.def} /> : <span></span>
+    }
+    normalizeValue(onChange: (newValue: any) => void, value:any) {
+        if(value.length==1) {
+            let keys = Object.keys(value[0])
+            if(keys.length==1 && keys[0]=='SpriteID') {
+                value = value[0].SpriteID
             }
         }
-        return <span>ERROR</span>
+        onChange(value)
+    }
+    renderEditor(name: string, value: any, onChange: (newValue: any) => void) {
+        if(typeof(value)==="string") {
+            value = [{SpriteID:value}]
+        }
+        return <NestedTableEditor key={name} name={name} value={value} tableDef={this.def} onChange={(newValue:any)=>this.normalizeValue(onChange, newValue)} />
     }
     validate(value: any) {
-        for (let def of this.defs) {
-            if ((!def.detector || def.detector(value)) && def.def.validate(value)) {
-                return true
-            }
-        }
-        return false
+        return typeof(value)==='string' || validateScheme(value, this.def)
     }
-    copy(value: any) {
-        for (let def of this.defs) {
-            if (!def.detector || def.detector(value)) {
-                return def.def.copy(value)
-            }
+    copy(value: any[]) {
+        if(typeof(value) === 'string') {
+            return value
         }
-        return value
+        return copyTable(value, this.def)
     }
 }
 
@@ -285,6 +290,7 @@ export function copyTable(table:any[], defs:FieldDef[]) {
     }
     if (!table.map) {
         console.log(table)
+        return table
     }
     return table.map((item:any)=>copyRecord(item, defs))
 }
@@ -306,7 +312,7 @@ const needsStatesScheme = [
     { name: 'ID', type: new TString },
     { name: 'Threshold', type: new TNumber },
     { name: 'Priority', type: new TNumber },
-    { name: 'ThoughtBubble', type: new TSpriteID(needsSpriteIDTransform) },
+    { name: 'ThoughtBubble', type: new TString },
     { name: 'Modifiers', type: new TNestedTable(stateModifierScheme) },
     { name: 'Action', type: new TString }
 ]
@@ -565,7 +571,7 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'MultiZ', type: new TBoolean },
         { name: 'Rotate', type: new TBoolean },
         { name: 'Floor', type: new TBoolean },
-        { name: 'SpriteID', type: new TOneOf([{ detector: stringDetector, def: new TSpriteID }, { def: new TNestedTable(actionSpriteIdScheme) }]) },
+        { name: 'SpriteID', type: new TSpriteIDNestedTable(actionSpriteIdScheme) },
         { name: 'TestTile', type: new TNestedTable(actionTestTileScheme) },
         { name: 'ConstructionSelect', type: new TBoolean }
     ],
