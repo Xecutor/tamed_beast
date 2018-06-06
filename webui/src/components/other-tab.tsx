@@ -47,7 +47,8 @@ export class OtherTab extends React.Component<OtherTabProps, OtherTabState>{
     }
 
     validateNext(idx:number) {
-        if (idx > this.props.tableList.length) {
+        if (idx >= this.props.tableList.length) {
+            this.setState({currentTable:'Finished!'})
             return;
         }
         this.setState({currentTable:this.props.tableList[idx], validateIdx:idx, errorMessages:[]})

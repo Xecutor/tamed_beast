@@ -95,9 +95,9 @@ export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState
         return convertArrayToList(rv)
     }
 
-    makeByMaterialTypeDetails(sprite:SpriteInfo) {
+    makeByMaterialTypesDetails(sprite:SpriteInfo) {
         let rv = [<span>By material type</span>]
-        for(let item of sprite.byMaterial) {
+        for(let item of sprite.byMaterialTypes) {
             let detail
             if(item.base) {
                 detail = this.makeBaseSpriteDetails(item.base)
@@ -116,6 +116,18 @@ export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState
         return convertArrayToList(rv)
     }
 
+    makeByMaterialsDetails(sprite:SpriteInfo) {
+        let rv = [<span>By material type</span>]
+        for(let item of sprite.byMaterials) {
+            let detail
+            if(item.base) {
+                detail = this.makeBaseSpriteDetails(item.base)
+            }
+            rv.push(<span>{detail},MaterialID:{item.materialId}</span>)
+        }
+        return convertArrayToList(rv)
+    }
+    
     makeRandomDetails(random:RandomSprite[]) {
         let rv = [<span>Random:</span>]
         for(let rs of random) {
@@ -157,8 +169,11 @@ export class SpritesTab extends React.Component<SpritesTabProps, SpritesTabState
         if(sprite.base) {
             return this.makeBaseSpriteDetails(sprite.base)
         }
-        if(sprite.byMaterial) {
-            return this.makeByMaterialTypeDetails(sprite)
+        if(sprite.byMaterialTypes) {
+            return this.makeByMaterialTypesDetails(sprite)
+        }
+        if(sprite.byMaterials) {
+            return this.makeByMaterialsDetails(sprite)
         }
         if(sprite.rotations) {
             return this.makeRotationsDetails(sprite.rotations)

@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import {Dropdown, Loader, Segment} from 'semantic-ui-react'
+import {Dropdown, Loader, Segment, Label} from 'semantic-ui-react'
 import { jsonrpcCall } from "../utils/jsonrpc";
 import {dbScheme} from '../database/scheme'
 import { TableView } from "./table-view";
@@ -63,6 +63,9 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         let mainComponent
         if(this.state.loading) {
             mainComponent = <Loader/>
+        }
+        else if(!dbScheme[this.state.tableName]) {
+            mainComponent = <Label>No scheme for {this.state.tableName}</Label>
         }
         else {
             mainComponent = <TableView 

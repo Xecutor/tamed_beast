@@ -84,12 +84,17 @@ export type IntermediateSprite = {
     percent:number
 }
 
-export type SpriteByMaterialType = {
+export type SpriteByMaterialTypes = {
     materialType : string
     sprite?:SpriteInfo
     base?:BaseSpriteRef
     intermediate?:Array<IntermediateSprite>
     rotations?:Array<BaseSpriteRotation>
+}
+
+export type SpriteByMaterials = {
+    materialId : string
+    base:BaseSpriteRef
 }
 
 export type RandomSprite = {
@@ -107,7 +112,8 @@ export type SpriteInfo = {
     base?: BaseSpriteRef
     seasons?: Array<BaseSpriteSeasonChoice>
     combine?: CombineInfo
-    byMaterial?:Array<SpriteByMaterialType>
+    byMaterialTypes?:Array<SpriteByMaterialTypes>
+    byMaterials?:Array<SpriteByMaterials>
     random?: Array<RandomSprite>
     frames?: Array<BaseSpriteRef>
     img: HTMLImageElement
@@ -360,7 +366,7 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
             return intermediate
         }
 
-        function makeSpriteByMaterial(def:any) : SpriteByMaterialType {
+        function makeSpriteByMaterialTypes(def:any) : SpriteByMaterialTypes {
             let materialType = def.MaterialType
             let sprite : SpriteInfo
             let base : BaseSpriteRef
@@ -391,14 +397,32 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
             }
         }
 
-        function makeSpriteByMaterialTypeArray(def:any) : Array<SpriteByMaterialType> {
+        function makeSpriteByMaterials(def:any) : SpriteByMaterials {
+            let materialId = def.MaterialID
+            let base = makeBaseSpriteRef(def)
+            return {
+                materialId,
+                base
+            }
+        }
+        
+
+        function makeSpriteByMaterialTypesArray(def:any) : Array<SpriteByMaterialTypes> {
             let sprites = []
             for(let sdef of def.ByMaterialTypes) {
-                sprites.push(makeSpriteByMaterial(sdef))
+                sprites.push(makeSpriteByMaterialTypes(sdef))
             }
             return sprites
         }
 
+        function makeSpriteByMaterialsArray(def:any) : Array<SpriteByMaterials> {
+            let sprites = []
+            for(let sdef of def.ByMaterials) {
+                sprites.push(makeSpriteByMaterials(sdef))
+            }
+            return sprites
+        }
+        
         function makeFrames(def:any) : Array<BaseSpriteRef> {
             let frames = []
             for(let fdef of def.Frames) {
@@ -417,7 +441,8 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                 let seasons: Array<BaseSpriteSeasonChoice>;
                 let random: Array<RandomSprite>
                 let combine: CombineInfo
-                let byMaterial : Array<SpriteByMaterialType>
+                let byMaterialTypes : Array<SpriteByMaterialTypes>
+                let byMaterials : Array<SpriteByMaterials>
                 let frames : Array<BaseSpriteRef>
                 let tint = spriteDef.tint
 
@@ -436,7 +461,10 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                         random = makeRandomArray(spriteDef)
                     }
                     else if (spriteDef.ByMaterialTypes) {
-                        byMaterial = makeSpriteByMaterialTypeArray(spriteDef)
+                        byMaterialTypes = makeSpriteByMaterialTypesArray(spriteDef)
+                    }
+                    else if (spriteDef.ByMaterials) {
+                        byMaterials = makeSpriteByMaterialsArray(spriteDef)
                     }
                     else if (spriteDef.Frames) {
                         frames = makeFrames(spriteDef)
@@ -473,8 +501,8 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                             img = getRandomSpriteImg(random)
                         }
                     }
-                    else if(byMaterial) {
-                        let m0 = byMaterial[0]
+                    else if(byMaterialTypes) {
+                        let m0 = byMaterialTypes[0]
                         if(m0.sprite) {
                             img = typeof(m0.sprite)!=='string'?m0.sprite.img:undefined
                         }
@@ -487,6 +515,9 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                         else {
                             img = getRotationImg(m0.rotations[0])
                         }
+                    }
+                    else if(byMaterials) {
+                        img = byMaterials[0].base.info.img
                     }
                     else if(seasons) {
                         img=getSeasonImg(seasons)
@@ -510,7 +541,8 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                         img,
                         rotations,
                         seasons,
-                        byMaterial,
+                        byMaterialTypes,
+                        byMaterials,
                         combine,
                         frames,
                         random,
@@ -618,14 +650,14 @@ export function loadSprites(imgList: Array<{ Tilesheet: string, File: string }>,
                 sprite.img = sprite.combine.img
             }
         }
-        if (sprite.byMaterial) {
-            for (let bm of sprite.byMaterial) {
+        if (sprite.byMaterialTypes) {
+            for (let bm of sprite.byMaterialTypes) {
                 if (bm.sprite && typeof (bm.sprite) === 'string') {
                     bm.sprite = getSprite(bm.sprite)
                 }
             }
             if(!sprite.img) {
-                sprite.img = sprite.byMaterial[0].sprite.img
+                sprite.img = sprite.byMaterialTypes[0].sprite.img
             }
         }
         if(sprite.random) {
