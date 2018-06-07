@@ -41,6 +41,7 @@ export class TableRefRenderer extends React.Component<TableRefRendererProps,Tabl
     render() {
         let trigger = <Label as='a'>{this.props.table} - {this.props.id}</Label>
         return <Popup
+            key={this.props.id}
             trigger={trigger}
             hoverable
             basic
@@ -50,7 +51,7 @@ export class TableRefRenderer extends React.Component<TableRefRendererProps,Tabl
             on='click'
             position='bottom center'>
             <Popup.Content>
-                <TableView table={this.state.record} tableDef={dbScheme[this.props.table]}/>
+                <TableView idxBase={0} table={this.state.record} tableDef={dbScheme[this.props.table]}/>
             </Popup.Content>
         </Popup>
 
@@ -82,7 +83,7 @@ interface NestedTableRendererProps{
 export class NestedTableRenderer extends React.Component<NestedTableRendererProps,any> {
     render() {
         //console.log('nestedtable',this.props.table)
-        return <TableView collapsable={true} initiallyCollapsed={true} table={this.props.table} tableDef={this.props.typeDef}/>
+        return <TableView idxBase={0} collapsable={true} initiallyCollapsed={true} table={this.props.table} tableDef={this.props.typeDef}/>
     }
 }
 

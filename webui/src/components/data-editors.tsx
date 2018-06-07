@@ -18,7 +18,8 @@ interface EditorProps<T> {
 
 export class StringEditor extends React.Component<EditorProps<string>,any> {
     render() {
-        return <Form.Input key={this.props.name} label={this.props.name} value={this.props.value} onChange={(e,{value})=>this.props.onChange(value)}/>
+        let value = this.props.value === undefined ? '' : this.props.value
+        return <Form.Input key={this.props.name} label={this.props.name} value={value} onChange={(e,{value})=>this.props.onChange(value)}/>
     }
 }
 
@@ -32,8 +33,9 @@ export class StringChoiceEditor extends React.Component<StringChoiceEditorProps,
             key:value,
             text:value,
             value:value,
-            seleced:value==this.props.value
+            selected:value==this.props.value
         }})
+        options.splice(0, 0, {key:'<Undefined>', text:'<Undefined>', value:undefined, selected:this.props.value===undefined})
         return <Form.Select
              key={this.props.name} 
              label={this.props.name} 
@@ -127,6 +129,7 @@ export class NestedTableEditor extends React.Component<NestedTableEditorProps,an
         return <Form.Field key={this.props.name}>
             <label>{this.props.name}</label>
             <TableView editMode 
+                idxBase={0}
                 onUpdate={(idx:number, record:any)=>this.onUpdate(idx, record)} 
                 onDelete={idx=>this.onDelete(idx)}
                 table={this.props.value} 

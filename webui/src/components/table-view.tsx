@@ -12,10 +12,10 @@ interface TableViewState{
     isInsertModalOpen:boolean[]
     isDeleteModalOpen:boolean[]
     editedTable:Array<any>
-    page:number
 }
 
 interface TableViewProps{
+    idxBase:number
     table:Array<any>
     tableDef?:Array<FieldDef>
     collapsable?:boolean
@@ -23,7 +23,6 @@ interface TableViewProps{
     editMode?:boolean
     onUpdate?:(idx:number, record:any)=>void
     onDelete?:(idx:number)=>void
-    pageSize?:number
 }
 
 function getID(idx:number,item:any) {
@@ -51,7 +50,6 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             isInsertModalOpen:[],
             isDeleteModalOpen:[],
             editedTable:[],
-            page:1
         }
     }
 
@@ -159,6 +157,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         let row = {}
         let id = kNewItemPseudoId
         let files : {[key:string]:boolean} = {}
+        let idxBase = this.props.idxBase
         if(this.props.table) {
             for(let item of this.props.table) {
                 if(item && item._filename) {
@@ -189,7 +188,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                         fileList={fileList}
                         inputRecord={row}
                         tableDef={this.props.tableDef}
-                        onSave={(rec)=>this.onRecordSave(idx, rec)}/>
+                        onSave={(rec)=>this.onRecordSave(idxBase + idx, rec)}/>
                 }
             </Modal.Content>
         </Modal>
@@ -198,6 +197,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
     renderDeleteModal(idx:number) {
         let table = this.props.editMode ? this.state.editedTable : this.props.table
         let id = typeof(table[idx].ID)==='string' ? table[idx].ID : `Item ${idx}`
+        let idxBase = this.props.idxBase
         return <Modal 
             onOpen={()=>this.onDeleteModalOpen(idx)}
             onClose={()=>this.onDeleteModalClosed(idx)}
@@ -213,7 +213,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                 <p>Confirm delete operation</p>
             </Modal.Content>
             <Modal.Actions>
-                <Button basic color='red' inverted onClick={()=>this.onDeleteItem(idx)}>
+                <Button basic color='red' inverted onClick={()=>this.onDeleteItem(idxBase + idx)}>
                     <Icon name='remove' /> Confirm
                 </Button>
                 <Button color='green' inverted onClick={()=>this.onDeleteModalClosed(idx)}>
@@ -223,17 +223,12 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         </Modal>
     }
 
-    onPageChange(page:number) {
-        this.setState({page})
-    }
-
     onDeleteItem(idx:number) {
         this.props.onDelete && this.props.onDelete(idx)
     }
 
     render() {
         let names: string[] = []
-        const pageSize = this.props.pageSize ? this.props.pageSize : 20
         if (this.props.tableDef) {
             names = this.props.tableDef.map(td=>td.name)
         }
@@ -253,34 +248,11 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             if(table===undefined) {
                 table = []
             }
-            let page = this.state.page
-            let pages = Math.ceil(table.length / pageSize)
-            if(page>pages) {
-                page = pages
-            }
-
-            let pagination
-
-            let idxBase = 0
-            
-            if (pages > 1) {
-                idxBase = (page-1)*pageSize
-                pagination = <Pagination 
-                                size='mini'
-                                activePage={this.state.page}
-                                totalPages={pages}
-                                onPageChange={(e, { activePage }) => this.onPageChange(activePage as number)} />
-                table = table.slice(idxBase, idxBase + pageSize)
-            }
-
 
             //, width:'100vw', height:'100vh'
             return <div style={{overflowX:'auto'}}>
                 {
                     this.props.collapsable?<Icon size='tiny' circular link name='minus' onClick={()=>this.collapseClick()}/>:undefined
-                }
-                {
-                    pagination
                 }
                 <Table selectable size='small' structured>
                     <Table.Header>
@@ -294,17 +266,17 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                     <Table.Body>
                         {
                             table.map((row,ridx)=>
-                            <Table.Row key={getID(idxBase + ridx, row)}>
+                            <Table.Row key={getID(ridx, row)}>
                                 {
                                     this.props.editMode &&
-                                    <Table.Cell key={`${getID(idxBase + ridx, row)}-e`}>
-                                        {this.renderEditModal(idxBase + ridx, row)}
-                                        {this.renderDeleteModal(idxBase + ridx)}
+                                    <Table.Cell key={`${getID(ridx, row)}-e`}>
+                                        {this.renderEditModal(ridx, row)}
+                                        {this.renderDeleteModal(ridx)}
                                     </Table.Cell>
                                 }
                                 {
                                     names.map((n,cidx)=>
-                                        <Table.Cell key={`${getID(idxBase + ridx, row)}-${n}`} style={{wordWrap:'break-word'}}>
+                                        <Table.Cell key={`${getID(ridx, row)}-${n}`} style={{wordWrap:'break-word'}}>
                                             {this.renderItem(row?row[n]:undefined, this.props.tableDef ? this.props.tableDef[cidx].type: undefined)}
                                         </Table.Cell>)
                                 }
