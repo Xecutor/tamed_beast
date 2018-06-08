@@ -117,7 +117,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
                 table = table.slice(idxBase, idxBase + pageSize)
             }
 
-            filter = <Input value={this.state.filter} onChange={(e,{value})=>this.onFilterChange(value)} icon='search'/>
+            filter = <Input placeholder='Search by ID' value={this.state.filter} onChange={(e,{value})=>this.onFilterChange(value)} icon='search'/>
             
             mainComponent = <TableView 
                                 editMode
@@ -133,12 +133,14 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
             <Grid columns={3}>
                 <Grid.Row>
                     <Grid.Column width={3}>
-                    Table:<Dropdown 
-                            search
-                            selection
-                            text={this.state.tableName}
-                            onChange={(e,{value})=>this.onTableChange(value as string)} 
-                            options={tableList}/>
+                    <Dropdown 
+                        search
+                        placeholder='Select table'
+                        selection
+                        labeled
+                        text={this.state.tableName}
+                        onChange={(e,{value})=>this.onTableChange(value as string)} 
+                        options={tableList}/>
                     </Grid.Column>
                     <Grid.Column width={4}>
                         {pagination}
