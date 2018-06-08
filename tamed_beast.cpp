@@ -14,7 +14,7 @@ class tamed_beast_app{
 public:
     enum{
         version_major = 0,
-        version_minor = 1,
+        version_minor = 5,
     };
 
     bool init(int argc, const char*const argv[])
