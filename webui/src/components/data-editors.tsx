@@ -115,6 +115,11 @@ interface NestedTableEditorProps {
 }
 
 export class NestedTableEditor extends React.Component<NestedTableEditorProps,any> {
+    onInsert(record:any) {
+        let updatedTable = this.props.value?[...this.props.value]:[]
+        updatedTable.push(record)
+        this.props.onChange(updatedTable)
+    }
     onUpdate(idx:number, record:any) {
         let updatedTable = this.props.value?[...this.props.value]:[]
         updatedTable[idx] = record
@@ -130,7 +135,8 @@ export class NestedTableEditor extends React.Component<NestedTableEditorProps,an
             <label>{this.props.name}</label>
             <TableView editMode 
                 idxBase={0}
-                onUpdate={(idx:number, record:any)=>this.onUpdate(idx, record)} 
+                onInsert={(record:any)=>this.onInsert(record)}
+                onUpdate={(idx:number, record:any)=>this.onUpdate(idx, record)}
                 onDelete={idx=>this.onDelete(idx)}
                 table={this.props.value} 
                 tableDef={this.props.tableDef} />

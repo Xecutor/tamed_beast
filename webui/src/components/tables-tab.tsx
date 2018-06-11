@@ -46,10 +46,22 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         jsonrpcCall('select', {table:tableName}).then(table=>this.setState({loading:false, tableName, table}))
     }
 
+    onTableInsert(newRecord:any) {
+        let _filename = newRecord._filename
+        newRecord._filename = undefined
+        jsonrpcCall('insert', {
+            table:this.state.tableName,
+            object:newRecord,
+            _filename}).then(resp=>{
+                    this.loadTable(this.state.tableName)
+                }
+        )
+    }
+
     onTableUpdate(idx:number, updatedRecord:any) {
-        let _filename = idx<this.state.table.length?this.state.table[idx]._filename:updatedRecord._filename
+        let _filename = this.state.table[idx]._filename
         updatedRecord._filename = undefined
-        jsonrpcCall(idx<this.state.table.length?'update':'insert', {
+        jsonrpcCall('update', {
             table:this.state.tableName,
             object:updatedRecord,
             _filename}).then(resp=>{
@@ -122,6 +134,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
             mainComponent = <TableView 
                                 editMode
                                 idxBase={idxBase}
+                                onInsert={(rec:any)=>this.onTableInsert(rec)}
                                 onUpdate={(idx:number, rec:any)=>this.onTableUpdate(idx, rec)}
                                 onDelete={(idx:number)=>this.onDeleteItem(idx)}
                                 table={table} 

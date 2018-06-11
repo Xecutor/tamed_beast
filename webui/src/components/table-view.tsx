@@ -21,6 +21,7 @@ interface TableViewProps{
     collapsable?:boolean
     initiallyCollapsed?:boolean
     editMode?:boolean
+    onInsert?:(record:any)=>void
     onUpdate?:(idx:number, record:any)=>void
     onDelete?:(idx:number)=>void
 }
@@ -82,7 +83,13 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         let isEdit = idx < editedTable.length
         let id = isEdit ? getID(idx, rec) : kNewItemPseudoId
         editedTable[idx] = rec
-        this.props.onUpdate(idx, rec)
+        console.log(`idxbase=${this.props.idxBase}, idx=${idx}`)
+        if(isEdit) {
+            this.props.onUpdate(this.props.idxBase + idx, rec)
+        }
+        else {
+            this.props.onInsert(rec)
+        }
         if(isEdit) {
             let isEditModalOpen = [...this.state.isEditModalOpen]
             isEditModalOpen[idx] = false
@@ -120,12 +127,14 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
     }
 
     onDeleteModalOpen(idx:number) {
+        console.log(`delete modal opened ${idx}`)
         let isDeleteModalOpen = [...this.state.isDeleteModalOpen]
         isDeleteModalOpen[idx] = true
         this.setState({isDeleteModalOpen})
     }
 
     onDeleteModalClosed(idx:number) {
+        console.log(`delete modal closed ${idx}`)
         let isDeleteModalOpen = [...this.state.isDeleteModalOpen]
         isDeleteModalOpen[idx] = false
         this.setState({isDeleteModalOpen})
@@ -136,6 +145,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             onOpen={()=>this.onEditModalOpen(idx)}
             onClose={()=>this.onEditModalClosed(idx)}
             dimmer='inverted'
+            closeIcon
             closeOnDimmerClick={false}
             open={this.state.isEditModalOpen[idx]}
             style={modalStyleFix} 
@@ -174,6 +184,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             onOpen={()=>this.onInsertModalOpen(idx)}
             onClose={()=>this.onInsertModalClosed(idx)}
             dimmer='inverted'
+            closeIcon
             closeOnDimmerClick={false}
             open={this.state.isInsertModalOpen[idx]}
             style={modalStyleFix} 
@@ -224,6 +235,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
     }
 
     onDeleteItem(idx:number) {
+        this.onDeleteModalClosed(idx)
         this.props.onDelete && this.props.onDelete(idx)
     }
 

@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import {Segment, List, Button, Grid, Label, Input, Dropdown} from 'semantic-ui-react'
+import {Segment, List, Button, Grid, Label, Input, Dropdown, Checkbox, Popup} from 'semantic-ui-react'
 
 import {FilteredList} from './filtered-list'
 
@@ -28,6 +28,7 @@ interface BaseSpriteTabState{
     selectedId:string
     displayedImgDef:string
     mode:BaseSpriteMode
+    filterByDef:boolean
 
     editId:string,
     editDef:string,
@@ -47,6 +48,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
             selectedId:'',
             displayedImgDef:'',
             mode:BaseSpriteMode.view,
+            filterByDef:false,
 
             editId:'',
             editDef:'',
@@ -260,7 +262,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
     }
 
     makeFileListOptions(sel:string) {
-        return getFileList().map(file=>{
+        let rv =  getFileList().map(file=>{
             let short = file.substr(file.indexOf('/') + 1)
             short = short.substr(0, short.indexOf('.'))
             return {
@@ -268,12 +270,18 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                 value:file,
                 selected:file==sel
             }
-        })    
+        })
+        console.log(rv)
+        return rv
     }
 
     changeTileSheet(fileDef:string) {
         this.setState({displayedImgDef:fileDef, selectedId:''})
         this.updateCanvas(getImage(fileDef))
+    }
+
+    onFilterByDefChange(filterByDef:boolean) {
+        this.setState({filterByDef})
     }
 
     render() {
@@ -364,12 +372,18 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
         //     {spriteList.map(id=><List.Item key={id} as='a' image={getBaseSprite(id).img.src} content={id} onClick={()=>this.onSpriteClick(id)}/>)}
         // </List-->
 
+        let spriteList = getBaseSpriteList()
+
+        if(this.state.filterByDef) {
+            spriteList = spriteList.filter(id=>getBaseSprite(id).file===this.state.displayedImgDef)
+        }
+
         return <div>
             <Grid columns={3}>
                 <Grid.Row>
                     <Grid.Column width={3}>
                         <FilteredList
-                            data={getBaseSpriteList()}
+                            data={spriteList}
                             filterItem={(id:string,flt:string)=>id.toUpperCase().indexOf(flt.toUpperCase())>=0}
                             getItemImageURL={(id:string)=>getBaseSprite(id).img.src}
                             getItemText={(id:string)=>id}
@@ -383,9 +397,24 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                     </Grid.Column>
                     <Grid.Column floated={'left'}>
                         <Segment.Group compact>
-                            <Segment key='controls'>
+                            <Segment key='controls' compact>
                                 <Button disabled={this.state.displayedImgDef.length==0} onClick={()=>this.markAssigned()}>Mark assigned</Button>
-                                <Dropdown disabled={this.state.mode!=BaseSpriteMode.view} options={this.makeFileListOptions(this.state.displayedImgDef)} onChange={(e,{value})=>this.changeTileSheet(value as string)}/>
+                                <Dropdown
+                                    selection
+                                    disabled={this.state.mode!=BaseSpriteMode.view} 
+                                    options={this.makeFileListOptions(this.state.displayedImgDef)} 
+                                    value={this.state.displayedImgDef}
+                                    onChange={(e,{value})=>this.changeTileSheet(value as string)}/>
+                                {' '}
+                                <Popup
+                                    trigger={
+                                        <Checkbox 
+                                            label="Filter" 
+                                            disabled={this.state.mode!=BaseSpriteMode.view || this.state.displayedImgDef===''}
+                                            onChange={(e,{checked})=>this.onFilterByDefChange(checked)}/>
+                                    }
+                                    content="Filter base sprite by tilesheet"
+                                />
                             </Segment>
                             <Segment key='cavas'>
                                 <canvas onClick={(evt)=>this.onCanvasClick(evt)} ref={(canvas=>this.storeCanvas(canvas))}/>
