@@ -88,7 +88,12 @@ protected:
 class json_rpc_service{
 public:
     json_rpc_service();
-    void init(const boost::filesystem::path& data_path);
+    struct config{
+        boost::filesystem::path data_path;
+        boost::filesystem::path backup_path;
+        bool perform_backup = true;
+    };
+    void init(const config& config);
     json_rpc_result callMethod(const char* methodName, const json_rpc_method_params& params)const;
 protected:
     void prepare_db_map();
@@ -96,6 +101,8 @@ protected:
     void store_json_file(const std::string& filename, const rapidjson::Document& doc);
 
     boost::filesystem::path m_data_path;
+    boost::filesystem::path m_backup_path;
+    bool m_perform_backup = true;
     using method_type = std::function<json_rpc_result(const json_rpc_method_params&)>;
     struct method_record{
         method_type method;

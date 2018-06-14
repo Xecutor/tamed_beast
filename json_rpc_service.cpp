@@ -96,9 +96,11 @@ json_rpc_service::json_rpc_service()
 {
 }
 
-void json_rpc_service::init(const boost::filesystem::path& data_path)
+void json_rpc_service::init(const config& config)
 {
-    m_data_path = data_path;
+    m_data_path = config.data_path;
+    m_backup_path = config.backup_path;
+    m_perform_backup = config.perform_backup;
 
     registerMethod("get_db_list",[this](const json_rpc_method_params& params){return get_db_list_method(params);});
     registerMethod("select",[this](const json_rpc_method_params& params){return select_method(params);});
@@ -153,18 +155,41 @@ void json_rpc_service::load_json_file(const std::string& filename, rapidjson::Do
 void json_rpc_service::store_json_file(const std::string& filename, const rapidjson::Document& doc)
 {
     auto path = m_data_path / filename;
-    auto backup_path = path;
-    int idx = 0;
+    if ( m_perform_backup ) {
+        auto backup_path_main = path;
+        int idx = 0;
 
-    do{
-        backup_path = path;
-        auto ext = backup_path.extension();
-        backup_path.replace_extension(fmt::format("{:03}", idx));
-        backup_path += ext;
-        ++idx;
-    }while(boost::filesystem::exists(backup_path));
+        if ( !m_backup_path.empty() ) {
+            if ( m_backup_path.is_relative() ) {
+                backup_path_main = path;
+            }
+            else {
+                backup_path_main = m_backup_path / filename;
+            }
+            auto filename_only = backup_path_main.filename();
+            backup_path_main.remove_filename();
+            if ( m_backup_path.is_relative() ) {
+                backup_path_main /= m_backup_path;
+            }
+            if ( !boost::filesystem::exists(backup_path_main) ) {
+                boost::filesystem::create_directories(backup_path_main);
+            }
+            backup_path_main /= filename_only;
+        }
 
-    boost::filesystem::rename(path, backup_path);
+        boost::filesystem::path backup_path;
+
+        do {
+            backup_path = backup_path_main;
+            auto ext = backup_path.extension();
+            backup_path.replace_extension(fmt::format("{:03}", idx));
+            backup_path += ext;
+            ++idx;
+        } while ( boost::filesystem::exists(backup_path) );
+
+        //printf("rename '%s' to '%s'\n", path.string().c_str(), backup_path.string().c_str());
+        boost::filesystem::rename(path, backup_path);
+    }
 
     FILE* f = fopen(path.string().c_str(), "wb");
     if (!f) {

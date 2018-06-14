@@ -21,6 +21,9 @@ public:
     {
         m_ingnomia_root = "c:/Program Files/Steam/steamapps/common/Ingnomia/";
 
+        boost::filesystem::path backup_path;
+        bool perform_backup = true;
+
         namespace po = boost::program_options;
         po::options_description options("Options");
         options.add_options()
@@ -28,6 +31,8 @@ public:
             ("web_host,h", po::value<std::string>(&m_web_config.address)->default_value(m_web_config.address))
             ("web_port,p", po::value<uint16_t>(&m_web_config.port)->default_value(m_web_config.port))
             ("game_root,r", po::value<boost::filesystem::path>(&m_ingnomia_root)->default_value(m_ingnomia_root))
+            ("backup_path,b", po::value<boost::filesystem::path>(&backup_path)->default_value(""))
+            ("disable_backup,n", "Disable backup")
             ("debug,d", "Enable debug output of web server")
             ("open,o", "Open default browser on start");
 
@@ -57,11 +62,19 @@ public:
             m_web_config.debug = true;
         }
 
+        if(vm.count("disable_backup")) {
+            perform_backup = false;
+        }
+
         m_tiles_path= m_ingnomia_root / "content" / "tilesheet";
         auto data_path = m_ingnomia_root / "content" / "JSON";
 
         m_web_server.init(m_web_config);
-        m_jsonrpc_svc.init(data_path);
+        json_rpc_service::config json_rpc_config;
+        json_rpc_config.data_path = data_path;
+        json_rpc_config.backup_path = backup_path;
+        json_rpc_config.perform_backup = perform_backup;
+        m_jsonrpc_svc.init(json_rpc_config);
 
         if(vm.count("open")) {
             system(fmt::format("start \"\" http://{}:{}/", m_web_config.address, m_web_config.port).c_str());
