@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
-import {Segment, List, Button, Grid, Label, Input, Dropdown, Checkbox, Popup} from 'semantic-ui-react'
+import {Segment, List, Button, Grid, Label, Input, Dropdown, Checkbox, Popup, Modal} from 'semantic-ui-react'
 
 import {FilteredList} from './filtered-list'
 
@@ -284,6 +284,19 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
         this.setState({filterByDef})
     }
 
+    deleteSprite() {
+        
+    }
+
+    renderDeleteModal() {
+        return <Modal
+                trigger={<Button onClick={()=>this.deleteSprite()}>Delete</Button>}
+            >
+            <Modal.Content>
+            </Modal.Content>
+        </Modal>
+    }
+
     render() {
         let id = this.state.mode==BaseSpriteMode.view?this.state.selectedId:this.state.editId
         let defFile = this.state.displayedImgDef
@@ -303,6 +316,7 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
                 <Segment key='buttons'>
                     <Button disabled={this.state.selectedId.length==0} onClick={()=>this.switchToEditMode()}>Edit</Button>
                     <Button onClick={()=>this.switchToInsertMode()}>Insert</Button>
+                    {this.renderDeleteModal()}
                 </Segment>,
                 <Segment key='def'>
                 ID:{id}<br/>
