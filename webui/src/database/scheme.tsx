@@ -4,12 +4,15 @@ import { StringRenderer, TableRefRenderer, ColorRenderer, NestedTableRenderer, S
 
 import { StringEditor, NumberEditor, BoolEditor, ColorEditor, NestedTableEditor, SpriteIDEditor, TableRefEditor, ArrayEditor, StringChoiceEditor } from '../components/data-editors'
 import { getSprite } from "../utils/sprites-loader";
+import { FilteredList } from "../components/filtered-list";
+import { caseInsensetiveFilter } from "../utils/string-util";
 
 export interface TypeDef {
     renderValue(value: any): JSX.Element | JSX.Element[]
-    renderEditor?(name: string, value: any, onChange: (newValue: any) => void): JSX.Element
+    renderEditor(name: string, value: any, onChange: (newValue: any) => void): JSX.Element
     validate(value: any): boolean
     copy(value: any): any
+    filter(value:any, filter:string):boolean
 }
 
 export type FieldDef = {
@@ -30,6 +33,9 @@ class TString implements TypeDef {
     copy(value: string) {
         return value
     }
+    filter(value:string, filter:string) {
+        return caseInsensetiveFilter(value, filter)
+    }
 }
 
 class TStringChoice implements TypeDef {
@@ -45,6 +51,9 @@ class TStringChoice implements TypeDef {
     }
     copy(value: string) {
         return value
+    }
+    filter(value:string, filter:string) {
+        return caseInsensetiveFilter(value, filter)
     }
 }
 
@@ -62,6 +71,10 @@ class TBoolean implements TypeDef {
     copy(value: boolean) {
         return value;
     }
+    filter(value:boolean, filter:string) {
+        value=!!value
+        return caseInsensetiveFilter(value.toString(), filter)
+    }
 }
 
 class TNumber implements TypeDef {
@@ -76,6 +89,9 @@ class TNumber implements TypeDef {
     }
     copy(value: number) {
         return value;
+    }
+    filter(value:number, filter:string) {
+        return caseInsensetiveFilter(typeof(value)==='number'?value.toString():'', filter)
     }
 }
 
@@ -93,6 +109,9 @@ class TColor implements TypeDef {
     copy(value: string) {
         return value;
     }
+    filter(value:string, filter:string) {
+        return caseInsensetiveFilter(typeof(value)==='string'?value:'', filter)
+    }
 }
 
 class TTableRef implements TypeDef {
@@ -109,6 +128,9 @@ class TTableRef implements TypeDef {
     }
     copy(value: string) {
         return value;
+    }
+    filter(value:string, filter:string) {
+        return caseInsensetiveFilter(typeof(value)==='string'?value:'', filter)
     }
 }
 
@@ -147,6 +169,9 @@ class TNestedTable implements TypeDef {
     copy(value: any[]) {
         return copyTable(value, this.def)
     }
+    filter(value:any, filter:string) {
+        return caseInsensetiveFilter(JSON.stringify(value), filter)
+    }
 }
 
 class TNestedObject implements TypeDef {
@@ -163,6 +188,9 @@ class TNestedObject implements TypeDef {
     }
     copy(value: any) {
         return copyRecord(value, this.def)
+    }
+    filter(value:any, filter:string) {
+        return caseInsensetiveFilter(JSON.stringify(value), filter)
     }
 }
 
@@ -195,6 +223,9 @@ class TArrayOf implements TypeDef {
         }
         return rv
     }
+    filter(value:any, filter:string) {
+        return caseInsensetiveFilter(JSON.stringify(value), filter)
+    }
 }
 
 class TSpriteID implements TypeDef {
@@ -211,6 +242,9 @@ class TSpriteID implements TypeDef {
     }
     copy(value: string) {
         return value;
+    }
+    filter(value:string, filter:string) {
+        return caseInsensetiveFilter(typeof(value)==='string'?value:'', filter)
     }
 }
 
@@ -247,6 +281,9 @@ class TSpriteIDNestedTable implements TypeDef {
         }
         return copyTable(value, this.def)
     }
+    filter(value:any, filter:string) {
+        return caseInsensetiveFilter(JSON.stringify(value), filter)
+    }
 }
 
 class TCustomObject implements TypeDef {
@@ -268,6 +305,9 @@ class TCustomObject implements TypeDef {
     }
     copy(value: any) {
         return { ...value }
+    }
+    filter(value:any, filter:string) {
+        return caseInsensetiveFilter(JSON.stringify(value), filter)
     }
 }
 
@@ -315,6 +355,28 @@ const needsStatesScheme = [
     { name: 'ThoughtBubble', type: new TString },
     { name: 'Modifiers', type: new TNestedTable(stateModifierScheme) },
     { name: 'Action', type: new TString }
+]
+
+const animalsStatesBehaviourScheme = [
+    { name: 'ID', type: new TString },
+    { name: 'ItemID', type: new TString },
+    { name: 'EggID', type: new TString },
+    { name: 'Amount', type: new TNumber },
+    { name: 'DaysBetween', type: new TNumber },
+    { name: 'RequiredGender', type: new TString },
+    { name: 'Auto', type: new TBoolean },
+    { name: 'CreatureID', type: new TString },
+    { name: 'HungerPerTick', type: new TNumber },
+    { name: 'EatTime', type: new TNumber },
+    { name: 'Speed', type: new TNumber },
+]
+
+const animalsStatesScheme = [
+    { name: 'ID', type: new TString },
+    { name: 'SpriteID', type: new TSpriteID },
+    { name: 'DaysToNextState', type: new TNumber },
+    { name: 'Immobile', type: new TBoolean },
+    { name: 'Behavior', type: new TNestedTable(animalsStatesBehaviourScheme)}
 ]
 
 const plantsStatesScheme = [
@@ -535,10 +597,10 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'ID', type: new TString },
         { name: 'AllowInWild', type: new TBoolean },
         { name: 'SpriteID', type: new TSpriteID },
-        { name: 'Behavior', type: new TString },
-        { name: 'Speed', type: new TNumber },
-        { name: 'HungerPerTick', type: new TNumber },
-        { name: 'EatTime', type: new TNumber },
+        { name: 'Pasture', type: new TBoolean },
+        { name: 'Nature', type: new TString },
+        { name: 'PastureSize', type: new TNumber },
+        { name: 'States', type: new TNestedTable(animalsStatesScheme)}
     ],
     Plants: [
         { name: 'ID', type: new TString },

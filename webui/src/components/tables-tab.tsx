@@ -8,11 +8,16 @@ import { TableView } from "./table-view";
 import { METHODS } from "http";
 import { caseInsensetiveFilter } from "../utils/string-util";
 
+type FilterType = {[key:string]:string}
+
 interface TablesTabState{
     table:Array<any>
+    fileList:string[]
+    idxMap:number[]
     tableName:string
     page:number
-    filter:string
+    pageSize:number
+    filter:FilterType
     loading:boolean
 }
 
@@ -25,9 +30,12 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         super(props)
         this.state={
             table:[],
+            fileList:[],
+            idxMap:[],
             tableName:'',
             page:1,
-            filter:'',
+            pageSize:20,
+            filter:{ID:''},
             loading:false,
         }
     }
@@ -38,12 +46,28 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
 
     loadTable(tableName:string, resetPage:boolean = false) {
         if(resetPage) {
-            this.setState({ loading: true, page: 1, filter:'' })
+            this.setState({ loading: true, page: 1, filter:{ID:''} })
         }
         else {
             this.setState({ loading: true})
         }
-        jsonrpcCall('select', {table:tableName}).then(table=>this.setState({loading:false, tableName, table}))
+        jsonrpcCall('select', {table:tableName}).then(table=>this.onAfterTableLoaded(table,tableName))
+    }
+
+    onAfterTableLoaded(table:any[], tableName:string) {
+        let files : {[key:string]:boolean} = {}
+        if(table) {
+            for(let item of table) {
+                if(item && item._filename) {
+                    files[item._filename] = true
+                }
+            }
+        }
+        let fileList = Object.keys(files).sort()
+        if(fileList.length==0) {
+            fileList = undefined
+        }
+        this.setState({loading:false, tableName, table, fileList})
     }
 
     onTableInsert(newRecord:any) {
@@ -59,6 +83,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     }
 
     onTableUpdate(idx:number, updatedRecord:any) {
+        idx = this.state.idxMap[idx]
         let _filename = this.state.table[idx]._filename
         updatedRecord._filename = undefined
         jsonrpcCall('update', {
@@ -71,18 +96,81 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     }
 
     onDeleteItem(idx:number) {
+        idx = this.state.idxMap[idx]
         let _filename = this.state.table[idx]._filename
         let ID = this.state.table[idx].ID
         console.log(`delete item ${ID}/${idx}`)
         jsonrpcCall('delete', {table:this.state.tableName, ID, idx, _filename}).then(resp=>this.loadTable(this.state.tableName))
     }
 
-    onPageChange(page:number) {
-        this.setState({page})
+    calcIdxMap(page:number,pageSize:number, filter:FilterType) {
+        let idxMap : number[] = []
+        let table = this.getFilteredTable(filter)
+        
+        let pages = Math.ceil(table.length / pageSize)
+        if (page > pages) {
+            page = pages
+        }
+
+        let idxBase = 0
+        
+        if (pages > 1) {
+            idxBase = (page - 1) * pageSize
+        }
+        for (let idx = 0; idx < pageSize; ++idx) {
+            let item = table[idxBase + idx]
+            if (!item) {
+                break
+            }
+            idxMap[idx] = item._baseIdx !== undefined ? item._baseIdx : idxBase + idx
+        }
+        console.log(idxMap)
+        return idxMap
     }
 
-    onFilterChange(filter:string) {
-        this.setState({filter})
+    onPageChange(page:number) {
+        let idxMap = this.calcIdxMap(page, this.state.pageSize, this.state.filter)
+        this.setState({page, idxMap})
+    }
+
+    onFilterIdChange(filterId:string) {
+        let filter = {...this.state.filter}
+        filter.ID = filterId
+        this.onFilterChange(filter)
+    }
+
+    onFilterChange(filter:FilterType) {
+        console.log(filter)
+        let idxMap = this.calcIdxMap(this.state.page, this.state.pageSize, filter)
+        this.setState({filter, idxMap})
+    }
+
+    onPageSizeChange(pageSize:number) {
+        let idxMap = this.calcIdxMap(this.state.page, pageSize, this.state.filter)
+        this.setState({pageSize, idxMap})
+    }
+
+    getFilteredTable(filter:FilterType) {
+        if (!Object.values(filter).some(value => !!value.length)) {
+            return this.state.table
+        }
+        let table = this.state.table.map((value,index)=>{
+            value._baseIdx = index
+            return value
+        })
+        let dbDef = dbScheme[this.state.tableName]
+        for(let name of Object.keys(filter)) {
+            let def = dbDef.find(val=>val.name===name)
+            let flt = filter[name]
+            if (!def || !flt) {
+                continue
+            }
+            console.log(def,flt)
+            table = table.filter((value:any)=>{
+                return def.type.filter(value, flt)
+            })
+        }
+        return table
     }
 
     render() {
@@ -97,6 +185,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         let mainComponent
         let pagination
         let filter
+        let pageSizeSelector
         if(this.state.loading) {
             mainComponent = <Loader/>
         }
@@ -105,11 +194,8 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         }
         else {
 
-            let table = this.state.table
-            if(this.state.filter.length>0) {
-                table = table.filter((value:any)=>caseInsensetiveFilter(value.ID, this.state.filter))
-            }
-            const pageSize = 20
+            let table = this.getFilteredTable(this.state.filter)
+            const pageSize = this.state.pageSize > 0 ? this.state.pageSize : this.state.table.length
             
             let page = this.state.page
             let pages = Math.ceil(table.length / pageSize)
@@ -129,11 +215,33 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
                 table = table.slice(idxBase, idxBase + pageSize)
             }
 
-            filter = <Input placeholder='Search by ID' value={this.state.filter} onChange={(e,{value})=>this.onFilterChange(value)} icon='search'/>
+            filter = <Input placeholder='Search by ID' value={this.state.filter.ID} onChange={(e,{value})=>this.onFilterIdChange(value)} icon='search'/>
+
+            let pageSizeOptions : {key:number, value:number, text:string, selected?:boolean}[] = [
+                {key:10, value:10, text:'10'},
+                {key:20, value:20, text:'20'},
+                {key:50, value:50, text:'50'},
+                {key:100, value:100, text:'100'},
+                {key:-1, value:-1, text:'Unlimited'},
+            ]
+            for(let opt of pageSizeOptions) {
+                if(opt.value===pageSize) {
+                    opt.selected = true
+                }
+            }
+
+            pageSizeSelector=<Dropdown 
+                                options={pageSizeOptions}
+                                selection
+                                value={this.state.pageSize}
+                                onChange={(e,{value})=>this.onPageSizeChange(value as number)}/>
             
             mainComponent = <TableView 
                                 editMode
-                                idxBase={idxBase}
+                                showFilter
+                                filter={this.state.filter}
+                                onFilterChange={filter=>this.onFilterChange(filter)}
+                                fileList={this.state.fileList}
                                 onInsert={(rec:any)=>this.onTableInsert(rec)}
                                 onUpdate={(idx:number, rec:any)=>this.onTableUpdate(idx, rec)}
                                 onDelete={(idx:number)=>this.onDeleteItem(idx)}
@@ -159,7 +267,8 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
                         {pagination}
                     </Grid.Column>
                     <Grid.Column>
-                        {filter}
+                        {filter}&nbsp;
+                        {pageSizeSelector}
                     </Grid.Column>
                 </Grid.Row>
             </Grid>

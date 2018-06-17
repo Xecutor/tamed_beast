@@ -1,10 +1,9 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
 
-import {Modal, Button, Icon, Table, Pagination} from 'semantic-ui-react'
+import {Modal, Button, Icon, Table, Input, Popup} from 'semantic-ui-react'
 import {FieldDef, TypeDef, copyTable} from '../database/scheme'
 import { RecordEditForm } from "./record-edit-form";
-import { isSymbol } from "util";
+import { ConfirmModal } from "./confirm-modal";
 
 interface TableViewState{
     collapsed:boolean
@@ -15,15 +14,19 @@ interface TableViewState{
 }
 
 interface TableViewProps{
-    idxBase:number
     table:Array<any>
+    fileList?:string[]
     tableDef?:Array<FieldDef>
     collapsable?:boolean
     initiallyCollapsed?:boolean
     editMode?:boolean
+    showFilter?:boolean
+    filter?:{[key:string]:string}
     onInsert?:(record:any)=>void
     onUpdate?:(idx:number, record:any)=>void
     onDelete?:(idx:number)=>void
+
+    onFilterChange?:(filter:{[key:string]:string})=>void
 }
 
 function getID(idx:number,item:any) {
@@ -83,9 +86,8 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
         let isEdit = idx < editedTable.length
         let id = isEdit ? getID(idx, rec) : kNewItemPseudoId
         editedTable[idx] = rec
-        console.log(`idxbase=${this.props.idxBase}, idx=${idx}`)
         if(isEdit) {
-            this.props.onUpdate(this.props.idxBase + idx, rec)
+            this.props.onUpdate(idx, rec)
         }
         else {
             this.props.onInsert(rec)
@@ -165,21 +167,6 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
     renderInsertModal() {
         let idx = this.state.editedTable?this.state.editedTable.length:0
         let row = {}
-        let id = kNewItemPseudoId
-        let files : {[key:string]:boolean} = {}
-        let idxBase = this.props.idxBase
-        if(this.props.table) {
-            for(let item of this.props.table) {
-                if(item && item._filename) {
-                    files[item._filename] = true
-                }
-            }
-        }
-        let fileList = Object.keys(files).sort()
-        if(fileList.length==0) {
-            fileList = undefined
-        }
-
         return <Modal 
             onOpen={()=>this.onInsertModalOpen(idx)}
             onClose={()=>this.onInsertModalClosed(idx)}
@@ -196,10 +183,10 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                 {
                     this.state.isInsertModalOpen &&
                     <RecordEditForm 
-                        fileList={fileList}
+                        fileList={this.props.fileList}
                         inputRecord={row}
                         tableDef={this.props.tableDef}
-                        onSave={(rec)=>this.onRecordSave(idxBase + idx, rec)}/>
+                        onSave={(rec)=>this.onRecordSave(idx, rec)}/>
                 }
             </Modal.Content>
         </Modal>
@@ -208,35 +195,63 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
     renderDeleteModal(idx:number) {
         let table = this.props.editMode ? this.state.editedTable : this.props.table
         let id = typeof(table[idx].ID)==='string' ? table[idx].ID : `Item ${idx}`
-        let idxBase = this.props.idxBase
-        return <Modal 
+        return <ConfirmModal
             onOpen={()=>this.onDeleteModalOpen(idx)}
             onClose={()=>this.onDeleteModalClosed(idx)}
-            closeOnDimmerClick={false}
             open={this.state.isDeleteModalOpen[idx]}
-            basic
-            size='small'
-            trigger={<Icon size='small' color='red' inverted name='delete' circular link/>}>
-            <Modal.Header>
-                {id}
-            </Modal.Header>
-            <Modal.Content scrolling>
-                <p>Confirm delete operation</p>
-            </Modal.Content>
-            <Modal.Actions>
-                <Button basic color='red' inverted onClick={()=>this.onDeleteItem(idxBase + idx)}>
-                    <Icon name='remove' /> Confirm
-                </Button>
-                <Button color='green' inverted onClick={()=>this.onDeleteModalClosed(idx)}>
-                    Cancel
-                </Button>
-            </Modal.Actions>
-        </Modal>
+            trigger={<Icon size='small' color='red' inverted name='delete' circular link/>}
+            header={id}
+            text='Confirm delete operation'
+            onConfirm={()=>this.onDeleteItem(idx)}
+            onCancel={()=>this.onDeleteModalClosed(idx)}
+            icon='remove'
+        />
     }
 
     onDeleteItem(idx:number) {
         this.onDeleteModalClosed(idx)
         this.props.onDelete && this.props.onDelete(idx)
+    }
+
+    onClearFilter(name:string) {
+        let filter = {...this.props.filter}
+        delete filter[name]
+        this.props.onFilterChange(filter)
+    }
+
+    onFilterChange(name:string, value:string) {
+        let filter = {...this.props.filter}
+        filter[name] = value
+        this.props.onFilterChange(filter)
+    }
+
+    renderFilterIcon(name:string) {
+        if(!this.props.showFilter) {
+            return
+        }
+        let icon = <span>
+            &nbsp;
+            <Icon 
+                name='filter'
+                inverted
+                color={this.props.filter && this.props.filter[name] ? 'red' : 'grey'}
+                bordered
+                size='small'/>
+        </span>
+        return <Popup
+                trigger={icon}
+                hoverable
+                flowing
+                position='bottom center'
+                on='click'>
+            <Popup.Content>
+                <Input 
+                    value={this.props.filter[name]?this.props.filter[name]:''} 
+                    icon={<Icon name='delete' size='small' inverted circular link onClick={()=>this.onClearFilter(name)}/>}
+                    onChange={(e,{value})=>this.onFilterChange(name, value)}
+                    />
+            </Popup.Content>
+        </Popup>
     }
 
     render() {
@@ -272,7 +287,11 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                             {
                                 this.props.editMode && this.props.tableDef && <Table.HeaderCell>{this.renderInsertModal()}</Table.HeaderCell>
                             }
-                            {names.map(n=><Table.HeaderCell key={n}>{n}</Table.HeaderCell>)}
+                            {names.map(n=><Table.HeaderCell key={n}>{n}
+                                                {
+                                                    this.renderFilterIcon(n)
+                                                }
+                                           </Table.HeaderCell>)}
                         </Table.Row>
                     </Table.Header>
                     <Table.Body>

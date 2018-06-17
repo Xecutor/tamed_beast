@@ -715,6 +715,10 @@ export function getBaseSpriteImageFile(sprite: BaseSpriteInfo) {
     return getFileNameFromURL(getImage(sprite.file).src)
 }
 
+export function deleteBaseSprite(id:string) {
+    delete baseSprites[id]
+}
+
 export function getFileList() {
     return Object.keys(images).sort()
 }

@@ -1,7 +1,5 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
-
-import {Segment, List, Button, Grid, Label, Input, Dropdown, Checkbox, Popup, Modal} from 'semantic-ui-react'
+import {Segment, Button, Icon, Grid, Input, Dropdown, Checkbox, Popup, Modal} from 'semantic-ui-react'
 
 import {FilteredList} from './filtered-list'
 
@@ -12,11 +10,12 @@ import {
     getBaseSpriteList,
     getImage,
     getFileList,
-    getBaseSpriteImageFile,
-    updateSpriteDefinition} from '../utils/sprites-loader'
+    updateSpriteDefinition,
+    deleteBaseSprite} from '../utils/sprites-loader'
 
 import {Rect, mkRect, rectToString, parseRect} from '../utils/rect'
 import { jsonrpcCall } from "../utils/jsonrpc";
+import { ConfirmModal } from "./confirm-modal";
 
 enum BaseSpriteMode{
     view,
@@ -29,6 +28,8 @@ interface BaseSpriteTabState{
     displayedImgDef:string
     mode:BaseSpriteMode
     filterByDef:boolean
+
+    deleteModalOpen:boolean
 
     editId:string,
     editDef:string,
@@ -49,6 +50,8 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
             displayedImgDef:'',
             mode:BaseSpriteMode.view,
             filterByDef:false,
+
+            deleteModalOpen : false,
 
             editId:'',
             editDef:'',
@@ -284,17 +287,33 @@ export class BaseSpritesTab extends React.Component<BaseSpriteTabProps, BaseSpri
         this.setState({filterByDef})
     }
 
-    deleteSprite() {
-        
+    onDeleteBaseSprite() {
+        jsonrpcCall('delete', {table:'BaseSprites', ID:this.state.selectedId, _filename:this.state.displayedImgDef}).then(()=>{
+            deleteBaseSprite(this.state.selectedId)
+            this.setState({selectedId:'', deleteModalOpen:false})
+        })
+    }
+
+    onDeleteModalOpen() {
+        this.setState({deleteModalOpen:true})
+    }
+
+    onDeleteModalClosed() {
+        this.setState({deleteModalOpen:false})
     }
 
     renderDeleteModal() {
-        return <Modal
-                trigger={<Button onClick={()=>this.deleteSprite()}>Delete</Button>}
-            >
-            <Modal.Content>
-            </Modal.Content>
-        </Modal>
+        return <ConfirmModal
+            onOpen={()=>this.onDeleteModalOpen()}
+            onClose={()=>this.onDeleteModalClosed()}
+            open={this.state.deleteModalOpen}
+            trigger={<Button disabled={this.state.selectedId.length===0}>Delete</Button>}
+            header={this.state.selectedId}
+            text='Confirm delete operation'
+            onConfirm={()=>this.onDeleteBaseSprite()}
+            onCancel={()=>this.onDeleteModalClosed()}
+            icon='remove'
+        />
     }
 
     render() {

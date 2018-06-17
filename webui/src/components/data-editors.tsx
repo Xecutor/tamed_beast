@@ -134,7 +134,6 @@ export class NestedTableEditor extends React.Component<NestedTableEditorProps,an
         return <Form.Field key={this.props.name}>
             <label>{this.props.name}</label>
             <TableView editMode 
-                idxBase={0}
                 onInsert={(record:any)=>this.onInsert(record)}
                 onUpdate={(idx:number, record:any)=>this.onUpdate(idx, record)}
                 onDelete={idx=>this.onDelete(idx)}
