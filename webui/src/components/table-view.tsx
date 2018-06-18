@@ -246,8 +246,9 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                 on='click'>
             <Popup.Content>
                 <Input 
+                    size='small'
                     value={this.props.filter[name]?this.props.filter[name]:''} 
-                    icon={<Icon name='delete' size='small' inverted circular link onClick={()=>this.onClearFilter(name)}/>}
+                    action={{icon:'delete', size:'small',onClick:()=>this.onClearFilter(name)}}
                     onChange={(e,{value})=>this.onFilterChange(name, value)}
                     />
             </Popup.Content>

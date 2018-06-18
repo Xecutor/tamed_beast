@@ -7,6 +7,7 @@ import {dbScheme} from '../database/scheme'
 import { TableView } from "./table-view";
 import { METHODS } from "http";
 import { caseInsensetiveFilter } from "../utils/string-util";
+import { getSettings, updateSetting } from "../utils/settings";
 
 type FilterType = {[key:string]:string}
 
@@ -28,13 +29,14 @@ interface TablesTabProps{
 export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     constructor(props:any) {
         super(props)
+        let settings = getSettings()
         this.state={
             table:[],
             fileList:[],
             idxMap:[],
             tableName:'',
             page:1,
-            pageSize:20,
+            pageSize:settings.pageSize,
             filter:{ID:''},
             loading:false,
         }
@@ -140,12 +142,12 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     }
 
     onFilterChange(filter:FilterType) {
-        console.log(filter)
         let idxMap = this.calcIdxMap(this.state.page, this.state.pageSize, filter)
         this.setState({filter, idxMap})
     }
 
     onPageSizeChange(pageSize:number) {
+        updateSetting('pageSize', pageSize)
         let idxMap = this.calcIdxMap(this.state.page, pageSize, this.state.filter)
         this.setState({pageSize, idxMap})
     }
@@ -165,10 +167,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
             if (!def || !flt) {
                 continue
             }
-            console.log(def,flt)
-            table = table.filter((value:any)=>{
-                return def.type.filter(value, flt)
-            })
+            table = table.filter((value:any)=>def.type.filter(value[name], flt))
         }
         return table
     }

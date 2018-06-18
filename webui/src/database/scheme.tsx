@@ -20,6 +20,13 @@ export type FieldDef = {
     type: TypeDef
 }
 
+function toStringSafe(val:any) {
+    if(typeof(val)==='undefined') {
+        return 'undefined'
+    }
+    return val.toString()
+}
+
 class TString implements TypeDef {
     renderValue(value: string) {
         return <StringRenderer value={value} />
@@ -34,7 +41,7 @@ class TString implements TypeDef {
         return value
     }
     filter(value:string, filter:string) {
-        return caseInsensetiveFilter(value, filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -53,7 +60,7 @@ class TStringChoice implements TypeDef {
         return value
     }
     filter(value:string, filter:string) {
-        return caseInsensetiveFilter(value, filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -72,8 +79,7 @@ class TBoolean implements TypeDef {
         return value;
     }
     filter(value:boolean, filter:string) {
-        value=!!value
-        return caseInsensetiveFilter(value.toString(), filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -91,7 +97,7 @@ class TNumber implements TypeDef {
         return value;
     }
     filter(value:number, filter:string) {
-        return caseInsensetiveFilter(typeof(value)==='number'?value.toString():'', filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -110,7 +116,7 @@ class TColor implements TypeDef {
         return value;
     }
     filter(value:string, filter:string) {
-        return caseInsensetiveFilter(typeof(value)==='string'?value:'', filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -130,7 +136,7 @@ class TTableRef implements TypeDef {
         return value;
     }
     filter(value:string, filter:string) {
-        return caseInsensetiveFilter(typeof(value)==='string'?value:'', filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -170,8 +176,15 @@ class TNestedTable implements TypeDef {
         return copyTable(value, this.def)
     }
     filter(value:any, filter:string) {
-        return caseInsensetiveFilter(JSON.stringify(value), filter)
+        return caseInsensetiveFilter(stringifySafe(value), filter)
     }
+}
+
+function stringifySafe(obj:any) {
+    if(typeof(obj)==='undefined') {
+        return 'undefined'
+    }
+    return JSON.stringify(obj)
 }
 
 class TNestedObject implements TypeDef {
@@ -190,7 +203,7 @@ class TNestedObject implements TypeDef {
         return copyRecord(value, this.def)
     }
     filter(value:any, filter:string) {
-        return caseInsensetiveFilter(JSON.stringify(value), filter)
+        return caseInsensetiveFilter(stringifySafe(value), filter)
     }
 }
 
@@ -224,7 +237,7 @@ class TArrayOf implements TypeDef {
         return rv
     }
     filter(value:any, filter:string) {
-        return caseInsensetiveFilter(JSON.stringify(value), filter)
+        return caseInsensetiveFilter(stringifySafe(value), filter)
     }
 }
 
@@ -244,7 +257,7 @@ class TSpriteID implements TypeDef {
         return value;
     }
     filter(value:string, filter:string) {
-        return caseInsensetiveFilter(typeof(value)==='string'?value:'', filter)
+        return caseInsensetiveFilter(toStringSafe(value), filter)
     }
 }
 
@@ -282,7 +295,7 @@ class TSpriteIDNestedTable implements TypeDef {
         return copyTable(value, this.def)
     }
     filter(value:any, filter:string) {
-        return caseInsensetiveFilter(JSON.stringify(value), filter)
+        return caseInsensetiveFilter(stringifySafe(value), filter)
     }
 }
 
@@ -307,7 +320,7 @@ class TCustomObject implements TypeDef {
         return { ...value }
     }
     filter(value:any, filter:string) {
-        return caseInsensetiveFilter(JSON.stringify(value), filter)
+        return caseInsensetiveFilter(stringifySafe(value), filter)
     }
 }
 
