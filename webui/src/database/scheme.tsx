@@ -392,6 +392,11 @@ const animalsStatesScheme = [
     { name: 'Behavior', type: new TNestedTable(animalsStatesBehaviourScheme)}
 ]
 
+const animalsOnButcherScheme = [
+    { name: 'ItemID', type: new TString },
+    { name: 'Amount', type: new TNumber },
+]
+
 const plantsStatesScheme = [
     { name: 'ID', type: new TString },
     { name: 'SpriteID', type: new TSpriteID },
@@ -613,7 +618,9 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'Pasture', type: new TBoolean },
         { name: 'Nature', type: new TString },
         { name: 'PastureSize', type: new TNumber },
-        { name: 'States', type: new TNestedTable(animalsStatesScheme)}
+        { name: 'States', type: new TNestedTable(animalsStatesScheme)},
+        { name: 'OnButcher', type: new TNestedTable(animalsOnButcherScheme)},
+        { name: 'GestationDays', type: new TNumber },
     ],
     Plants: [
         { name: 'ID', type: new TString },
@@ -699,7 +706,8 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'OutputTile', type: new TString },
         { name: 'Crafts', type: new TArrayOf(new TTableRef('Items')) },
         { name: 'Components', type: new TNestedTable(workshopsComponentsScheme) },
-        { name: 'SpecialGui', type: new TString }
+        { name: 'SpecialGui', type: new TString },
+        { name: 'GUI', type: new TString }
     ],
     Items: [
         { name: 'ID', type: new TString },
