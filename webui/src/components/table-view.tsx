@@ -147,7 +147,7 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             onOpen={()=>this.onEditModalOpen(idx)}
             onClose={()=>this.onEditModalClosed(idx)}
             dimmer='inverted'
-            closeIcon
+            closeIcon={{name:'close', color:'black'}}
             closeOnDimmerClick={false}
             open={this.state.isEditModalOpen[idx]}
             style={modalStyleFix} 

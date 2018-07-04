@@ -69,7 +69,8 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         if(fileList.length==0) {
             fileList = undefined
         }
-        this.setState({loading:false, tableName, table, fileList})
+        let idxMap = this.calcIdxMap(table, this.state.page, this.state.pageSize, this.state.filter)
+        this.setState({loading:false, tableName, table, fileList, idxMap})
     }
 
     onTableInsert(newRecord:any) {
@@ -85,7 +86,9 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     }
 
     onTableUpdate(idx:number, updatedRecord:any) {
+        console.log(idx, this.state.idxMap)
         idx = this.state.idxMap[idx]
+        console.log(idx, this.state.table[idx])
         let _filename = this.state.table[idx]._filename
         updatedRecord._filename = undefined
         jsonrpcCall('update', {
@@ -105,9 +108,13 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         jsonrpcCall('delete', {table:this.state.tableName, ID, idx, _filename}).then(resp=>this.loadTable(this.state.tableName))
     }
 
-    calcIdxMap(page:number,pageSize:number, filter:FilterType) {
+    calcIdxMap(table:any[], page:number,pageSize:number, filter:FilterType) {
         let idxMap : number[] = []
-        let table = this.getFilteredTable(filter)
+        table = this.getFilteredTable(table, filter)
+
+        if (pageSize == -1) {
+            pageSize = table.length
+        }
         
         let pages = Math.ceil(table.length / pageSize)
         if (page > pages) {
@@ -131,7 +138,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     }
 
     onPageChange(page:number) {
-        let idxMap = this.calcIdxMap(page, this.state.pageSize, this.state.filter)
+        let idxMap = this.calcIdxMap(this.state.table, page, this.state.pageSize, this.state.filter)
         this.setState({page, idxMap})
     }
 
@@ -142,21 +149,21 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
     }
 
     onFilterChange(filter:FilterType) {
-        let idxMap = this.calcIdxMap(this.state.page, this.state.pageSize, filter)
+        let idxMap = this.calcIdxMap(this.state.table,this.state.page, this.state.pageSize, filter)
         this.setState({filter, idxMap})
     }
 
     onPageSizeChange(pageSize:number) {
         updateSetting('pageSize', pageSize)
-        let idxMap = this.calcIdxMap(this.state.page, pageSize, this.state.filter)
+        let idxMap = this.calcIdxMap(this.state.table,this.state.page, pageSize, this.state.filter)
         this.setState({pageSize, idxMap})
     }
 
-    getFilteredTable(filter:FilterType) {
+    getFilteredTable(table:any[], filter:FilterType) {
         if (!Object.values(filter).some(value => !!value.length)) {
-            return this.state.table
+            return table
         }
-        let table = this.state.table.map((value,index)=>{
+         table = table.map((value,index)=>{
             value._baseIdx = index
             return value
         })
@@ -193,7 +200,7 @@ export class TablesTab extends React.Component<TablesTabProps, TablesTabState>{
         }
         else {
 
-            let table = this.getFilteredTable(this.state.filter)
+            let table = this.getFilteredTable(this.state.table, this.state.filter)
             const pageSize = this.state.pageSize > 0 ? this.state.pageSize : this.state.table.length
             
             let page = this.state.page

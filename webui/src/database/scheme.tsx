@@ -590,7 +590,8 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
     ],
     Skills: [
         { name: 'ID', type: new TString },
-        { name: 'RequiredToolItemID', type: new TTableRef('Items') }
+        { name: 'RequiredToolItemID', type: new TTableRef('Items') },
+        { name: 'Group', type: new TString}
     ],
     SkillGroups: [
         { name: 'ID', type: new TString },

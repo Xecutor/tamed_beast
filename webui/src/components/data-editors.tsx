@@ -45,8 +45,17 @@ export class StringChoiceEditor extends React.Component<StringChoiceEditorProps,
 }
 
 export class NumberEditor extends React.Component<EditorProps<number>,any> {
+    onChange(value:string) {
+        let numValue = parseFloat(value)
+        if (!isNaN(numValue) && numValue.toString() == value) {
+            this.props.onChange(numValue)
+        }
+        else {
+            this.props.onChange(value as any)
+        }
+    }
     render() {
-        return <Form.Input key={this.props.name} label={this.props.name}value={this.props.value} onChange={(e,{value})=>this.props.onChange(parseInt(value))}/>
+        return <Form.Input key={this.props.name} label={this.props.name} value={this.props.value} onChange={(e,{value})=>this.onChange(value)}/>
     }
 }
 
