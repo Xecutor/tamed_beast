@@ -382,6 +382,7 @@ const animalsStatesBehaviourScheme = [
     { name: 'HungerPerTick', type: new TNumber },
     { name: 'EatTime', type: new TNumber },
     { name: 'Speed', type: new TNumber },
+    { name: 'FoodValue', type: new TNumber },
 ]
 
 const animalsStatesScheme = [
@@ -393,6 +394,7 @@ const animalsStatesScheme = [
 ]
 
 const animalsOnButcherScheme = [
+    { name: 'Type', type: new TString },
     { name: 'ItemID', type: new TString },
     { name: 'Amount', type: new TNumber },
 ]
@@ -431,6 +433,7 @@ const actionSpriteIdScheme = [
     { name: 'SpriteID', type: new TSpriteID },
     { name: 'Offset', type: new TString },
     { name: 'Rotate', type: new TBoolean },
+    { name: 'Floor', type: new TBoolean },
     { name: 'type', type: new TString }, //???
 ]
 
@@ -462,6 +465,7 @@ const actionTestTileScheme = [
 
 const constructionsSpritesScheme = [
     { name: 'SpriteID', type: new TSpriteID },
+    { name: 'SpriteIDOverride', type: new TSpriteID },
     { name: 'Offset', type: new TString },
     { name: 'Type', type: new TString },
 ]
@@ -498,6 +502,7 @@ const craftsSkillGainScheme = [
     { name: 'SkillID', type: new TTableRef('Skills') },
     { name: 'Formula', type: new TString },
     { name: 'Args', type: new TCustomObject },
+    { name: 'Value', type: new TNumber },
 ]
 
 const craftsPrereqsScheme = [
@@ -622,6 +627,9 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'States', type: new TNestedTable(animalsStatesScheme)},
         { name: 'OnButcher', type: new TNestedTable(animalsOnButcherScheme)},
         { name: 'GestationDays', type: new TNumber },
+        { name: 'Food', type : new TArrayOf(new TString)},
+        { name: 'Embark', type: new TBoolean },
+        { name: 'Aquatic', type: new TBoolean },
     ],
     Plants: [
         { name: 'ID', type: new TString },
@@ -656,7 +664,8 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'Floor', type: new TBoolean },
         { name: 'SpriteID', type: new TSpriteIDNestedTable(actionSpriteIdScheme) },
         { name: 'TestTile', type: new TNestedTable(actionTestTileScheme) },
-        { name: 'ConstructionSelect', type: new TBoolean }
+        { name: 'ConstructionSelect', type: new TBoolean },
+        { name: 'Floor', type: new TBoolean },
     ],
     Constructions: [
         { name: 'ID', type: new TString },
@@ -665,6 +674,7 @@ export const dbScheme: { [key: string]: FieldDef[] } = {
         { name: 'Rotation', type: new TBoolean },
         { name: 'Components', type: new TNestedTable(constructionComponentsScheme) },
         { name: 'IntermediateSprites', type: new TNestedTable(constructionsIntermediateSpritesScheme) },
+        { name: 'NoConstruction', type: new TBoolean },
     ],
     ConstructionTypes: [
         { name: 'ID', type: new TString },
