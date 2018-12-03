@@ -6,9 +6,11 @@ import { StringEditor, NumberEditor, BoolEditor, ColorEditor, NestedTableEditor,
 import { getSprite } from "../utils/sprites-loader";
 import { FilteredList } from "../components/filtered-list";
 import { caseInsensetiveFilter } from "../utils/string-util";
+import { InplaceStringEditor } from "../components/data-inplace-editors";
 
 export interface TypeDef {
     renderValue(value: any): JSX.Element | JSX.Element[]
+    renderInplace?(value:any, onChange: (newValue: any) => void) : JSX.Element
     renderEditor(name: string, value: any, onChange: (newValue: any) => void): JSX.Element
     validate(value: any): boolean
     copy(value: any): any
@@ -33,6 +35,9 @@ class TString implements TypeDef {
     }
     renderEditor(name: string, value: string, onChange: (newValue: string) => void) {
         return <StringEditor key={name} name={name} value={value} onChange={onChange} />
+    }
+    renderInplace(value:string, onChange: (newValue: any) => void) {
+        return <InplaceStringEditor value={value} onChange={onChange}/>
     }
     validate(value: any) {
         return typeof (value) === "string"
@@ -538,6 +543,7 @@ const workshopsComponentsScheme = [
     { name: 'ItemID', type: new TTableRef('Items') },
     { name: 'MaterialItem', type: new TArrayOf(new TNumber) },
     { name: 'WallRotation', type: new TString },
+    { name: 'Type', type: new TString },
     { name: 'Required', type: new TArrayOf(new TStringChoice(testTileValues)) },
     { name: 'Forbidden', type: new TArrayOf(new TStringChoice(testTileValues)) },
 ]
