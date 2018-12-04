@@ -6,7 +6,7 @@ import { StringEditor, NumberEditor, BoolEditor, ColorEditor, NestedTableEditor,
 import { getSprite } from "../utils/sprites-loader";
 import { FilteredList } from "../components/filtered-list";
 import { caseInsensetiveFilter } from "../utils/string-util";
-import { InplaceStringEditor } from "../components/data-inplace-editors";
+import { InplaceStringEditor, InplaceNumberEditor, InplaceBooleanEditor } from "../components/data-inplace-editors";
 
 export interface TypeDef {
     renderValue(value: any): JSX.Element | JSX.Element[]
@@ -76,7 +76,9 @@ class TBoolean implements TypeDef {
     renderEditor(name: string, value: boolean, onChange: (newValue: boolean) => void) {
         return <BoolEditor key={name} name={name} value={value} onChange={onChange} />
     }
-
+    renderInplace(value:boolean, onChange: (newValue: any) => void) {
+        return <InplaceBooleanEditor value={value} onChange={onChange}/>
+    }
     validate(value: any) {
         return typeof (value) === "boolean"
     }
@@ -94,6 +96,9 @@ class TNumber implements TypeDef {
     }
     renderEditor(name: string, value: number, onChange: (newValue: number) => void) {
         return <NumberEditor key={name} name={name} value={value} onChange={onChange} />
+    }
+    renderInplace(value:string, onChange: (newValue: any) => void) {
+        return <InplaceNumberEditor value={value} onChange={onChange}/>
     }
     validate(value: any) {
         return typeof (value) === "number" || typeof (value) === "string"

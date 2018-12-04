@@ -76,7 +76,9 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
             console.log(`update ridx=${ridx}, cidx=${cidx}`, record)
             this.props.onUpdate(ridx, record)
         }
-        this.setState({inplaceEditorCol:undefined, inplaceEditorRow:undefined})
+        else {
+            this.setState({inplaceEditorCol:undefined, inplaceEditorRow:undefined})
+        }
     }
 
     renderItem(ridx:number, cidx:number, value: any, def?:TypeDef) {
@@ -88,7 +90,12 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
                 return def.renderValue(value)
             }
         }
-        return <span>{value === undefined ? '' : value.toString()}</span>
+        if (this.state.inplaceEditorRow == ridx && this.state.inplaceEditorCol == cidx && def.renderInplace) {
+            return def.renderInplace(value, (newValue) => this.onInplaceValueChange(ridx, cidx, newValue))
+        }
+        else {
+            return <span>{value === undefined ? '' : value.toString()}</span>
+        }
     }
 
     expandClick() {
@@ -276,8 +283,9 @@ export class TableView extends React.Component<TableViewProps, TableViewState>{
     onCellClick(ridx:number, cidx:number) {
         //let table = this.props.editMode ? this.state.editedTable : this.props.table
         //if(this.props.tableDef[cellIdx] && )
+
         console.log(`ridx=${ridx}, cidx=${cidx}`)
-        if(this.props.tableDef[cidx] && this.props.tableDef[cidx].type.renderInplace) {
+        if(this.props.editMode && this.props.tableDef[cidx] && this.props.tableDef[cidx].type.renderInplace) {
             this.setState({inplaceEditorRow: ridx, inplaceEditorCol: cidx})
         }
     }

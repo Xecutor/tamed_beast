@@ -1,7 +1,7 @@
 
 import {JSONRPCClient, JSONRPCResponse, JSONRPCRequest} from 'json-rpc-2.0';
 
-let ws:WebSocket;
+let webSocket:WebSocket;
 let client:JSONRPCClient;
 
 interface PromiseReq<T>{
@@ -31,7 +31,7 @@ function sendRequest(req:JSONRPCRequest) {
     })
     let reqString = JSON.stringify(req)
     //console.log(`sending:${reqString}`)
-    ws.send(reqString)
+    webSocket.send(reqString)
     return promise
 }
 
@@ -47,11 +47,11 @@ export function jsonrpcInit(wshandler:WsHandler)
     wsurl+="://"
     wsurl+=document.location.host
     wsurl+="/json_ws"
-    ws=new WebSocket(wsurl)
-    ws.onopen=()=>wshandler.onWsConnect()
-    ws.onerror=()=>wshandler.onWsError()
-    ws.onclose=()=>wshandler.onWsDisconnect()
-    ws.onmessage=onWsMessage
+    webSocket=new WebSocket(wsurl)
+    webSocket.onopen=()=>wshandler.onWsConnect()
+    webSocket.onerror=()=>wshandler.onWsError()
+    webSocket.onclose=()=>wshandler.onWsDisconnect()
+    webSocket.onmessage=onWsMessage
     reqPromiseMap={}
 }
 
